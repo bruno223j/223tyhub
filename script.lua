@@ -1,18 +1,17 @@
 -- ╔══════════════════════════════════════════════════════════╗
--- ║                   223HUB  v9.0                          ║
--- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
--- ║      DISCORD: .223j  |  frty2017                        ║
+-- ║                   223HUB  v1.0                           ║
+-- ║      SCRIPT FEITO POR BRUNO223J E TY                     ║
+-- ║      DISCORD: .223j  |  frty2017                         ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-local Players          = game:GetService("Players")
-local RunService       = game:GetService("RunService")
-local UIS              = game:GetService("UserInputService")
-local CoreGui          = game:GetService("CoreGui")
-local TweenService     = game:GetService("TweenService")
-local HttpService      = game:GetService("HttpService")
-local Workspace        = game:GetService("Workspace")
-local Chat             = game:GetService("Chat")
-local TeleportService  = game:GetService("TeleportService")
+local Players         = game:GetService("Players")
+local RunService      = game:GetService("RunService")
+local UIS             = game:GetService("UserInputService")
+local CoreGui         = game:GetService("CoreGui")
+local TweenService    = game:GetService("TweenService")
+local HttpService     = game:GetService("HttpService")
+local Workspace       = game:GetService("Workspace")
+local TeleportService = game:GetService("TeleportService")
 
 local LP    = Players.LocalPlayer
 local Mouse = LP:GetMouse()
@@ -27,7 +26,7 @@ local function AC(c) _conns[#_conns+1]=c; return c end
 
 _G._223HUB_Kill = function()
     for _,c in ipairs(_conns) do pcall(function() c:Disconnect() end) end
-    _conns={}
+    _conns = {}
     if _G._223HUB_ESPO then
         for _,d in pairs(_G._223HUB_ESPO) do
             for _,v in pairs(d) do
@@ -35,19 +34,20 @@ _G._223HUB_Kill = function()
                 else pcall(function() v:Remove() end) end
             end
         end
-        _G._223HUB_ESPO={}
+        _G._223HUB_ESPO = {}
     end
     if _G._223HUB_FOVC then pcall(function() _G._223HUB_FOVC:Remove() end); _G._223HUB_FOVC=nil end
     if CoreGui:FindFirstChild("223TYHUB") then CoreGui:FindFirstChild("223TYHUB"):Destroy() end
 end
 
 -- ============================================================
--- CONFIG
+-- CONFIG — TODOS COMEÇAM false/desligado
 -- ============================================================
 local Cfg = {
     ESP = {
-        Enabled=false, Box=true, Fill=false, Names=true,
-        HP=true, Tracers=false, Dist=true, WallCheck=false,
+        -- tudo false: usuário liga o que quiser
+        Enabled=false, Box=false, Fill=false, Names=false,
+        HP=false, Tracers=false, Dist=false, WallCheck=false,
         TeamCheck=false, HeldTool=false,
         MaxDist=500, TrackList={},
         BoxColor    = Color3.fromRGB(220,40,40),
@@ -60,8 +60,8 @@ local Cfg = {
         ToolColor   = Color3.fromRGB(255,210,50),
     },
     Xray = {
-        Enabled=false, Box=true, Fill=false, Names=true,
-        HP=true, Tracers=false, Dist=true,
+        Enabled=false, Box=false, Fill=false, Names=false,
+        HP=false, Tracers=false, Dist=false,
         TeamCheck=false, Skeleton=false, MaxDist=1000,
         BoxColor    = Color3.fromRGB(0,160,255),
         FillColor   = Color3.fromRGB(0,120,220),
@@ -73,13 +73,12 @@ local Cfg = {
         SkelColor   = Color3.fromRGB(0,200,255),
     },
     Aim = {
-        Aimbot=false, SilentAim=false, WallCheck=false, TeamCheck=false,
+        Aimbot=false, WallCheck=false, TeamCheck=false,
         Prediction=false, PredStr=1,
-        NoRecoil=false, NoSpread=false, InfAmmo=false,
-        FOV=120, ShowFOV=true, UseFOV=true, FOVFollow=false,
+        NoRecoil=false, InfAmmo=false, FastReload=false,
+        FOV=120, ShowFOV=false, UseFOV=false, FOVFollow=false,
         AimPart="Head", Smoothness=15,
         AimKey=Enum.KeyCode.E, AimKeyName="E",
-        SAChance=100,
         Blacklist={},
     },
     Trigger = { Enabled=false, TeamCheck=false, Delay=100 },
@@ -92,9 +91,13 @@ local Cfg = {
         JumpMod=false, JumpPower=80, JumpMethod="JumpPower",
         InfJump=false, AntiRag=false,
         FreeCam=false, FCamSpeed=1,
-        BoomboxID="",
-        DupeToolName="",
+        BoomboxID="", DupeToolName="",
         ClickTp=false, SpinBot=false,
+    },
+    Modes = {
+        SpiderMan=false,  -- anda nas paredes
+        Aquaman=false,    -- não afoga embaixo d'agua
+        NoFallDmg=false,  -- sem dano de queda
     },
     Troll = {
         ChatSpam=false, SpamMsg="223HUB", SpamDelay=1,
@@ -107,7 +110,6 @@ local Cfg = {
         ToggleKey=Enum.KeyCode.Semicolon, ToggleKeyName=";",
         ESPKey=Enum.KeyCode.F2,           ESPKeyName="F2",
         AimbotKey=Enum.KeyCode.F3,        AimbotKeyName="F3",
-        SilentKey=Enum.KeyCode.F4,        SilentKeyName="F4",
         FlyKey=Enum.KeyCode.F5,           FlyKeyName="F5",
         NoclipKey=Enum.KeyCode.F6,        NoclipKeyName="F6",
         SpeedKey=Enum.KeyCode.F7,         SpeedKeyName="F7",
@@ -131,7 +133,8 @@ local function SafeSer(t)
 end
 local function SerCfg()
     local t={ESP=SafeSer(Cfg.ESP),Xray=SafeSer(Cfg.Xray),Aim=SafeSer(Cfg.Aim),
-             Trigger=SafeSer(Cfg.Trigger),Misc=SafeSer(Cfg.Misc),Settings=SafeSer(Cfg.Settings)}
+             Trigger=SafeSer(Cfg.Trigger),Misc=SafeSer(Cfg.Misc),
+             Modes=SafeSer(Cfg.Modes),Settings=SafeSer(Cfg.Settings)}
     t.Aim.AimKeyName=Cfg.Aim.AimKeyName
     for k,v in pairs(Cfg.Settings) do if type(v)=="string" then t.Settings[k]=v end end
     return HttpService:JSONEncode(t)
@@ -145,7 +148,8 @@ local function ApplySave(t)
         end
     end
     mg(Cfg.ESP,t.ESP); mg(Cfg.Xray,t.Xray); mg(Cfg.Aim,t.Aim)
-    mg(Cfg.Trigger,t.Trigger); mg(Cfg.Misc,t.Misc); mg(Cfg.Settings,t.Settings)
+    mg(Cfg.Trigger,t.Trigger); mg(Cfg.Misc,t.Misc)
+    mg(Cfg.Modes,t.Modes); mg(Cfg.Settings,t.Settings)
     local function TK(n)
         if not n then return Enum.KeyCode.Unknown end
         local ok,k=pcall(function() return Enum.KeyCode[n] end)
@@ -155,7 +159,6 @@ local function ApplySave(t)
     Cfg.Settings.ToggleKey=TK(Cfg.Settings.ToggleKeyName)
     Cfg.Settings.ESPKey=TK(Cfg.Settings.ESPKeyName)
     Cfg.Settings.AimbotKey=TK(Cfg.Settings.AimbotKeyName)
-    Cfg.Settings.SilentKey=TK(Cfg.Settings.SilentKeyName)
     Cfg.Settings.FlyKey=TK(Cfg.Settings.FlyKeyName)
     Cfg.Settings.NoclipKey=TK(Cfg.Settings.NoclipKeyName)
     Cfg.Settings.SpeedKey=TK(Cfg.Settings.SpeedKeyName)
@@ -198,32 +201,23 @@ end
 -- ============================================================
 -- UTILITÁRIOS
 -- ============================================================
-
--- W2S CORRIGIDO: WorldToViewportPoint retorna (Vector3_screenPos, bool_onScreen)
--- Não pode ser wrappado com pcall porque pcall não captura múltiplos returns corretamente
 local function W2S(worldPos)
     local sp, onScreen = Cam:WorldToViewportPoint(worldPos)
-    -- sp.Z > 0 = na frente da câmera; onScreen = dentro do viewport
-    local visible = (sp.Z > 0) and onScreen
-    return Vector2.new(sp.X, sp.Y), visible
+    return Vector2.new(sp.X, sp.Y), (sp.Z > 0) and onScreen
 end
 
--- GetBounds CORRIGIDO: verifica Z>0 (atrás da câmera) e calcula altura mínima
 local function GetBounds(char)
     if not char then return nil end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    -- Pontos topo e base do personagem
-    local topW  = hrp.Position + Vector3.new(0, 3.3, 0)
-    local botW  = hrp.Position - Vector3.new(0, 2.8, 0)
-    local topSP, topVis = W2S(topW)
-    local botSP, botVis = W2S(botW)
-    -- Rejeita se ambos atrás da câmera
-    local topZ = (Cam:WorldToViewportPoint(topW)).Z
-    local botZ = (Cam:WorldToViewportPoint(botW)).Z
+    local hrp = char:FindFirstChild("HumanoidRootPart"); if not hrp then return nil end
+    local topW = hrp.Position + Vector3.new(0, 3.3, 0)
+    local botW = hrp.Position - Vector3.new(0, 2.8, 0)
+    local topSP, _ = W2S(topW)
+    local botSP, _ = W2S(botW)
+    local topZ = Cam:WorldToViewportPoint(topW).Z
+    local botZ = Cam:WorldToViewportPoint(botW).Z
     if topZ <= 0 and botZ <= 0 then return nil end
     local h = math.abs(botSP.Y - topSP.Y)
-    if h < 2 then return nil end -- muito pequeno = longe demais ou atrás
+    if h < 2 then return nil end
     local w = h * 0.55
     return topSP.X - w/2, topSP.Y, w, h
 end
@@ -253,13 +247,13 @@ local function IsVisible(char)
     for _,v in ipairs(myc:GetDescendants())  do if v:IsA("BasePart") then ex[#ex+1]=v end end
     for _,v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then ex[#ex+1]=v end end
     rp.FilterDescendantsInstances = ex
-    local result = Workspace:Raycast(mine.Position, hrp.Position - mine.Position, rp)
-    return result == nil
+    local res = Workspace:Raycast(mine.Position, hrp.Position - mine.Position, rp)
+    return res == nil
 end
 
 local function SameTeam(p)
     if not p or p == LP then return false end
-    local mt = LP.Team; local pt = p.Team
+    local mt=LP.Team; local pt=p.Team
     return mt ~= nil and pt ~= nil and mt == pt
 end
 
@@ -280,7 +274,6 @@ local function GetHeldTool(char)
     return nil
 end
 
--- ClosestTarget — também filtra por FOV se UseFOV ativo
 local function ClosestTarget()
     local vs = Cam.ViewportSize
     local center = Vector2.new(vs.X/2, vs.Y/2)
@@ -293,15 +286,15 @@ local function ClosestTarget()
         if Cfg.Aim.WallCheck and not IsVisible(c) then continue end
         local sp, onScreen = W2S(part.Position)
         if not onScreen then continue end
-        local dist2D = (sp - center).Magnitude
-        if Cfg.Aim.UseFOV and dist2D > Cfg.Aim.FOV then continue end
-        if dist2D < bestD then bestD = dist2D; best = p end
+        local d = (sp - center).Magnitude
+        if Cfg.Aim.UseFOV and d > Cfg.Aim.FOV then continue end
+        if d < bestD then bestD=d; best=p end
     end
     return best
 end
 
 local function GetPlayerByName(name)
-    if not name or name == "" then return nil end
+    if not name or name=="" then return nil end
     local q = name:lower()
     for _,p in ipairs(Players:GetPlayers()) do
         if p.Name:lower():find(q,1,true) or p.DisplayName:lower():find(q,1,true) then return p end
@@ -327,110 +320,88 @@ local BONES_R6 = {
     {"Torso","Left Leg"},{"Torso","Right Leg"},
 }
 
-local function NewD(kind, props)
+local function ND(kind, props)
     local d = Drawing.new(kind)
-    for k,v in pairs(props) do d[k] = v end
+    for k,v in pairs(props) do d[k]=v end
     return d
 end
 
 local function MakeESP(p)
-    if p == LP or ESPO[p] then return end
-    local d = {}
-    -- ESP (normal, wallcheck)
-    d.Box     = NewD("Square",{Filled=false, Color=Cfg.ESP.BoxColor,     Transparency=0,   Thickness=1.5, Visible=false})
-    d.Fill    = NewD("Square",{Filled=true,  Color=Cfg.ESP.FillColor,    Transparency=0.65,Thickness=0,   Visible=false})
-    d.Name    = NewD("Text",  {Size=13, Color=Cfg.ESP.NameColor,   Outline=true,OutlineColor=Color3.new(0,0,0),Center=true, Visible=false})
-    d.Dist    = NewD("Text",  {Size=11, Color=Cfg.ESP.DistColor,   Outline=true,OutlineColor=Color3.new(0,0,0),Center=true, Visible=false})
-    d.HPBg    = NewD("Square",{Filled=true,  Color=Cfg.ESP.HPBgColor,    Transparency=0,   Thickness=0,   Visible=false})
-    d.HPFill  = NewD("Square",{Filled=true,  Color=Cfg.ESP.HPColor,      Transparency=0,   Thickness=0,   Visible=false})
-    d.HPText  = NewD("Text",  {Size=9,  Color=Color3.new(1,1,1),   Outline=true,OutlineColor=Color3.new(0,0,0),Center=true, Visible=false})
-    d.Tracer  = NewD("Line",  {Thickness=1.2, Color=Cfg.ESP.TracerColor, Transparency=0,   Visible=false})
-    d.Tool    = NewD("Text",  {Size=11, Color=Cfg.ESP.ToolColor,   Outline=true,OutlineColor=Color3.new(0,0,0),Center=true, Visible=false})
-    -- Xray (sem wallcheck)
-    d.XBox    = NewD("Square",{Filled=false, Color=Cfg.Xray.BoxColor,    Transparency=0,   Thickness=1.5, Visible=false})
-    d.XFill   = NewD("Square",{Filled=true,  Color=Cfg.Xray.FillColor,   Transparency=0.65,Thickness=0,   Visible=false})
-    d.XName   = NewD("Text",  {Size=13, Color=Cfg.Xray.NameColor,  Outline=true,OutlineColor=Color3.new(0,0,0),Center=true, Visible=false})
-    d.XDist   = NewD("Text",  {Size=11, Color=Cfg.Xray.DistColor,  Outline=true,OutlineColor=Color3.new(0,0,0),Center=true, Visible=false})
-    d.XHPBg   = NewD("Square",{Filled=true,  Color=Cfg.Xray.HPBgColor,   Transparency=0,   Thickness=0,   Visible=false})
-    d.XHPFill = NewD("Square",{Filled=true,  Color=Cfg.Xray.HPColor,     Transparency=0,   Thickness=0,   Visible=false})
-    d.XTracer = NewD("Line",  {Thickness=1.2, Color=Cfg.Xray.TracerColor,Transparency=0,   Visible=false})
-    -- Skeleton (14 ossos)
+    if p==LP or ESPO[p] then return end
+    local d={}
+    -- ESP
+    d.Box    = ND("Square",{Filled=false,Color=Cfg.ESP.BoxColor,    Transparency=0,  Thickness=1.5,Visible=false})
+    d.Fill   = ND("Square",{Filled=true, Color=Cfg.ESP.FillColor,   Transparency=0.65,Thickness=0,Visible=false})
+    d.Name   = ND("Text",  {Size=13,Color=Cfg.ESP.NameColor,  Outline=true,OutlineColor=Color3.new(0,0,0),Center=true,Visible=false})
+    d.Dist   = ND("Text",  {Size=11,Color=Cfg.ESP.DistColor,  Outline=true,OutlineColor=Color3.new(0,0,0),Center=true,Visible=false})
+    d.HPBg   = ND("Square",{Filled=true, Color=Cfg.ESP.HPBgColor,   Transparency=0,  Thickness=0,Visible=false})
+    d.HPFill = ND("Square",{Filled=true, Color=Cfg.ESP.HPColor,     Transparency=0,  Thickness=0,Visible=false})
+    d.HPText = ND("Text",  {Size=9, Color=Color3.new(1,1,1),  Outline=true,OutlineColor=Color3.new(0,0,0),Center=true,Visible=false})
+    d.Tracer = ND("Line",  {Thickness=1.2,Color=Cfg.ESP.TracerColor,Transparency=0,  Visible=false})
+    d.Tool   = ND("Text",  {Size=11,Color=Cfg.ESP.ToolColor,  Outline=true,OutlineColor=Color3.new(0,0,0),Center=true,Visible=false})
+    -- Xray
+    d.XBox    = ND("Square",{Filled=false,Color=Cfg.Xray.BoxColor,   Transparency=0,  Thickness=1.5,Visible=false})
+    d.XFill   = ND("Square",{Filled=true, Color=Cfg.Xray.FillColor,  Transparency=0.65,Thickness=0,Visible=false})
+    d.XName   = ND("Text",  {Size=13,Color=Cfg.Xray.NameColor, Outline=true,OutlineColor=Color3.new(0,0,0),Center=true,Visible=false})
+    d.XDist   = ND("Text",  {Size=11,Color=Cfg.Xray.DistColor, Outline=true,OutlineColor=Color3.new(0,0,0),Center=true,Visible=false})
+    d.XHPBg   = ND("Square",{Filled=true, Color=Cfg.Xray.HPBgColor,  Transparency=0,  Thickness=0,Visible=false})
+    d.XHPFill = ND("Square",{Filled=true, Color=Cfg.Xray.HPColor,    Transparency=0,  Thickness=0,Visible=false})
+    d.XTracer = ND("Line",  {Thickness=1.2,Color=Cfg.Xray.TracerColor,Transparency=0, Visible=false})
+    -- Skeleton
     d.Skel = {}
-    for i = 1,14 do
-        d.Skel[i] = NewD("Line",{Thickness=1, Color=Cfg.Xray.SkelColor, Transparency=0, Visible=false})
-    end
-    ESPO[p] = d
+    for i=1,14 do d.Skel[i]=ND("Line",{Thickness=1,Color=Cfg.Xray.SkelColor,Transparency=0,Visible=false}) end
+    ESPO[p]=d
 end
 
 local function KillESP(p)
-    local d = ESPO[p]; if not d then return end
+    local d=ESPO[p]; if not d then return end
     for _,v in pairs(d) do
         if type(v)=="table" then for _,l in pairs(v) do pcall(function() l:Remove() end) end
         else pcall(function() v:Remove() end) end
     end
-    ESPO[p] = nil
+    ESPO[p]=nil
 end
 
 local function HideAll(d)
-    for k,v in pairs(d) do
+    for _,v in pairs(d) do
         if type(v)=="table" then for _,l in pairs(v) do if l.Visible~=nil then l.Visible=false end end
-        elseif v.Visible ~= nil then v.Visible=false end
+        elseif v.Visible~=nil then v.Visible=false end
     end
 end
 
--- FOV Circle
-local FOVC = NewD("Circle",{Thickness=1.5, Color=Color3.fromRGB(220,50,50), Filled=false, NumSides=64, Transparency=0, Visible=false})
+-- FOV
+local FOVC = ND("Circle",{Thickness=1.5,Color=Color3.fromRGB(220,50,50),Filled=false,NumSides=64,Transparency=0,Visible=false})
 _G._223HUB_FOVC = FOVC
 
 -- ============================================================
--- SILENT AIM
+-- NO RECOIL / FAST RELOAD / INF AMMO
 -- ============================================================
-local _saHooked = false
-local function HookSA()
-    if _saHooked then return end
-    _saHooked = true
-    local ok, mt = pcall(getrawmetatable, Mouse)
-    if not ok or not mt then _saHooked=false; return end
-    local orig = mt.__index
-    local ok2 = pcall(setreadonly, mt, false)
-    if not ok2 then _saHooked=false; return end
-    local function saIndex(self, k)
-        if Cfg.Aim.SilentAim and math.random(1,100) <= Cfg.Aim.SAChance then
-            local t = ClosestTarget()
-            if t and t.Character then
-                local pt = t.Character:FindFirstChild(Cfg.Aim.AimPart)
-                        or t.Character:FindFirstChild("HumanoidRootPart")
-                if pt then
-                    if k == "Hit"    then return CFrame.new(pt.Position) end
-                    if k == "Target" then return pt end
-                end
-            end
-        end
-        return orig(self, k)
-    end
-    mt.__index = (type(newcclosure)=="function") and newcclosure(saIndex) or saIndex
-    setreadonly(mt, true)
-end
-
--- ============================================================
--- NO RECOIL
--- ============================================================
-local _nrConn = nil
+local _nrConn=nil
 local function StartNoRecoil()
     if _nrConn then return end
-    _nrConn = AC(RunService.RenderStepped:Connect(function()
-        if not Cfg.Aim.NoRecoil then return end
-        local char = LP.Character; if not char then return end
+    _nrConn=AC(RunService.RenderStepped:Connect(function()
+        if not Cfg.Aim.NoRecoil and not Cfg.Aim.FastReload then return end
+        local char=LP.Character; if not char then return end
         for _,tool in ipairs(char:GetChildren()) do
             if tool:IsA("Tool") then
                 for _,v in ipairs(tool:GetDescendants()) do
-                    local nm = v.Name:lower()
-                    if nm:find("recoil") or nm:find("kickback") or nm:find("kick") then
-                        pcall(function()
-                            if     v:IsA("Vector3Value") then v.Value = Vector3.zero
-                            elseif v:IsA("NumberValue")  then v.Value = 0
-                            elseif v:IsA("CFrameValue")  then v.Value = CFrame.identity end
-                        end)
+                    local nm=v.Name:lower()
+                    -- No Recoil: zera valores de recoil/kickback
+                    if Cfg.Aim.NoRecoil then
+                        if nm:find("recoil") or nm:find("kickback") then
+                            pcall(function()
+                                if v:IsA("Vector3Value") then v.Value=Vector3.zero
+                                elseif v:IsA("NumberValue") then v.Value=0 end
+                            end)
+                        end
+                    end
+                    -- Fast Reload: zera tempo de reload/firerate
+                    if Cfg.Aim.FastReload then
+                        if nm:find("reload") or nm:find("firerate") or nm:find("delay") or nm:find("cooldown") then
+                            pcall(function()
+                                if v:IsA("NumberValue") and v.Value > 0 then v.Value=0.01 end
+                            end)
+                        end
                     end
                 end
             end
@@ -438,28 +409,23 @@ local function StartNoRecoil()
     end))
 end
 
--- ============================================================
--- INFINITE AMMO
--- ============================================================
-local _iaConn = nil
+local _iaConn=nil
 local function StartInfAmmo()
     if _iaConn then return end
-    _iaConn = AC(RunService.Heartbeat:Connect(function()
+    _iaConn=AC(RunService.Heartbeat:Connect(function()
         if not Cfg.Aim.InfAmmo then return end
-        local char = LP.Character; if not char then return end
-        local bp   = LP:FindFirstChild("Backpack")
-        local containers = {char}
-        if bp then containers[2] = bp end
+        local char=LP.Character; if not char then return end
+        local bp=LP:FindFirstChild("Backpack")
+        local containers={char}
+        if bp then containers[2]=bp end
         for _,cont in ipairs(containers) do
             for _,tool in ipairs(cont:GetChildren()) do
                 if tool:IsA("Tool") then
                     for _,v in ipairs(tool:GetDescendants()) do
                         pcall(function()
-                            local nm = v.Name:lower()
+                            local nm=v.Name:lower()
                             if nm:find("ammo") or nm:find("clip") or nm:find("bullets") or nm:find("mag") or nm:find("reserve") then
-                                if (v:IsA("IntValue") or v:IsA("NumberValue")) and v.Value < 9999 then
-                                    v.Value = 9999
-                                end
+                                if (v:IsA("IntValue") or v:IsA("NumberValue")) and v.Value<9999 then v.Value=9999 end
                             end
                         end)
                     end
@@ -472,19 +438,18 @@ end
 -- ============================================================
 -- TRIGGERBOT
 -- ============================================================
-local _tbLast = 0
+local _tbLast=0
 AC(RunService.Heartbeat:Connect(function()
     if not Cfg.Trigger.Enabled then return end
-    if tick() - _tbLast < Cfg.Trigger.Delay/1000 then return end
-    local tgt = Mouse.Target; if not tgt then return end
-    local model = tgt:FindFirstAncestorOfClass("Model"); if not model then return end
-    local p = Players:GetPlayerFromCharacter(model); if not p then return end
+    if tick()-_tbLast < Cfg.Trigger.Delay/1000 then return end
+    local tgt=Mouse.Target; if not tgt then return end
+    local model=tgt:FindFirstAncestorOfClass("Model"); if not model then return end
+    local p=Players:GetPlayerFromCharacter(model); if not p then return end
     if not IsValidTarget(p) then return end
     if Cfg.Trigger.TeamCheck and SameTeam(p) then return end
-    local h = model:FindFirstChildOfClass("Humanoid")
-    if not h or h.Health <= 0 then return end
-    _tbLast = tick()
-    local vms = game:GetService("VirtualInputManager")
+    local h=model:FindFirstChildOfClass("Humanoid"); if not h or h.Health<=0 then return end
+    _tbLast=tick()
+    local vms=game:GetService("VirtualInputManager")
     if vms then
         pcall(function() vms:SendMouseButtonEvent(0,0,0,true,game,0) end)
         task.wait(0.05)
@@ -495,56 +460,56 @@ end))
 -- ============================================================
 -- FLY
 -- ============================================================
-local _flyConn, _bv, _bg = nil,nil,nil
+local _flyConn,_bv,_bg=nil,nil,nil
 local function EnableFly()
     if _flyConn then return end
-    local char = LP.Character; if not char then return end
-    local hrp  = char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid");  if not hum then return end
-    hum.PlatformStand = true
-    _bv = Instance.new("BodyVelocity"); _bv.MaxForce=Vector3.new(1e5,1e5,1e5); _bv.Velocity=Vector3.zero; _bv.Parent=hrp
-    _bg = Instance.new("BodyGyro");    _bg.MaxTorque=Vector3.new(1e5,1e5,1e5); _bg.P=1e4; _bg.Parent=hrp
-    _flyConn = AC(RunService.RenderStepped:Connect(function()
+    local char=LP.Character; if not char then return end
+    local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    hum.PlatformStand=true
+    _bv=Instance.new("BodyVelocity"); _bv.MaxForce=Vector3.new(1e5,1e5,1e5); _bv.Velocity=Vector3.zero; _bv.Parent=hrp
+    _bg=Instance.new("BodyGyro"); _bg.MaxTorque=Vector3.new(1e5,1e5,1e5); _bg.P=1e4; _bg.Parent=hrp
+    _flyConn=AC(RunService.RenderStepped:Connect(function()
         if not Cfg.Misc.Fly then return end
         if not _bv or not _bv.Parent then return end
-        local cf = Cam.CFrame; local vel = Vector3.zero
-        local spd = Cfg.Misc.FlySpeed * (Cfg.Misc.FlyBoost and 3 or 1)
-        if UIS:IsKeyDown(Enum.KeyCode.W) then vel = vel + cf.LookVector  * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then vel = vel - cf.LookVector  * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then vel = vel - cf.RightVector * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then vel = vel + cf.RightVector * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.Space)     then vel = vel + Vector3.new(0, spd, 0) end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then vel = vel - Vector3.new(0, spd*0.6, 0) end
-        _bv.Velocity = vel; _bg.CFrame = cf
+        local cf=Cam.CFrame; local vel=Vector3.zero
+        local spd=Cfg.Misc.FlySpeed*(Cfg.Misc.FlyBoost and 3 or 1)
+        if UIS:IsKeyDown(Enum.KeyCode.W) then vel=vel+cf.LookVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then vel=vel-cf.LookVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then vel=vel-cf.RightVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then vel=vel+cf.RightVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.Space)     then vel=vel+Vector3.new(0,spd,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then vel=vel-Vector3.new(0,spd*0.6,0) end
+        _bv.Velocity=vel; _bg.CFrame=cf
     end))
 end
 local function DisableFly()
     if _flyConn then _flyConn:Disconnect(); _flyConn=nil end
     if _bv then pcall(function() _bv:Destroy() end); _bv=nil end
     if _bg then pcall(function() _bg:Destroy() end); _bg=nil end
-    local char = LP.Character; if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid"); if hum then hum.PlatformStand=false end
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if hum then hum.PlatformStand=false end
 end
 
 -- ============================================================
 -- NOCLIP
 -- ============================================================
-local _ncConn = nil
+local _ncConn=nil
 local function EnableNoclip()
     if _ncConn then return end
-    _ncConn = AC(RunService.Stepped:Connect(function()
+    _ncConn=AC(RunService.Stepped:Connect(function()
         if not Cfg.Misc.Noclip then return end
-        local char = LP.Character; if not char then return end
+        local char=LP.Character; if not char then return end
         for _,p in ipairs(char:GetDescendants()) do
-            if p:IsA("BasePart") then p.CanCollide = false end
+            if p:IsA("BasePart") then p.CanCollide=false end
         end
     end))
 end
 local function DisableNoclip()
     if _ncConn then _ncConn:Disconnect(); _ncConn=nil end
-    local char = LP.Character; if not char then return end
+    local char=LP.Character; if not char then return end
     for _,p in ipairs(char:GetDescendants()) do
-        if p:IsA("BasePart") then p.CanCollide = true end
+        if p:IsA("BasePart") then p.CanCollide=true end
     end
 end
 
@@ -552,93 +517,84 @@ end
 -- SPEED / JUMP
 -- ============================================================
 local function ApplySpeed()
-    local char = LP.Character; if not char then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    hum.WalkSpeed = Cfg.Misc.Speed and Cfg.Misc.WalkSpeed or 16
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    hum.WalkSpeed=Cfg.Misc.Speed and Cfg.Misc.WalkSpeed or 16
 end
 local function ApplyJump()
-    local char = LP.Character; if not char then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
     if not Cfg.Misc.JumpMod then hum.JumpPower=50; return end
-    if Cfg.Misc.JumpMethod == "JumpPower" then hum.JumpPower = Cfg.Misc.JumpPower
-    else hum.UseJumpPower=true; hum.JumpHeight = Cfg.Misc.JumpPower * 0.4 end
+    if Cfg.Misc.JumpMethod=="JumpPower" then hum.JumpPower=Cfg.Misc.JumpPower
+    else hum.UseJumpPower=true; hum.JumpHeight=Cfg.Misc.JumpPower*0.4 end
 end
 AC(UIS.JumpRequest:Connect(function()
     if not Cfg.Misc.InfJump then return end
-    local char = LP.Character; if not char then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
     hum:ChangeState(Enum.HumanoidStateType.Jumping)
 end))
 
 -- ============================================================
 -- ANTI AFK
 -- ============================================================
-local function StartAntiAFK()
-    LP.Idled:Connect(function()
-        if not Cfg.Misc.AntiAFK then return end
-        local vim = game:GetService("VirtualInputManager")
-        pcall(function() vim:SendKeyEvent(true, Enum.KeyCode.ButtonL3,false,game) end)
-        task.wait(0.5)
-        pcall(function() vim:SendKeyEvent(false,Enum.KeyCode.ButtonL3,false,game) end)
-    end)
-end
+LP.Idled:Connect(function()
+    if not Cfg.Misc.AntiAFK then return end
+    local vim=game:GetService("VirtualInputManager")
+    pcall(function() vim:SendKeyEvent(true,Enum.KeyCode.ButtonL3,false,game) end)
+    task.wait(0.5)
+    pcall(function() vim:SendKeyEvent(false,Enum.KeyCode.ButtonL3,false,game) end)
+end)
 
 -- ============================================================
 -- ANTI RAGDOLL
 -- ============================================================
 AC(RunService.Heartbeat:Connect(function()
     if not Cfg.Misc.AntiRag then return end
-    local char = LP.Character; if not char then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    local st = hum:GetState()
-    if st == Enum.HumanoidStateType.Ragdoll or st == Enum.HumanoidStateType.FallingDown then
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local st=hum:GetState()
+    if st==Enum.HumanoidStateType.Ragdoll or st==Enum.HumanoidStateType.FallingDown then
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
     for _,v in ipairs(char:GetDescendants()) do
         if v:IsA("BallSocketConstraint") or v:IsA("HingeConstraint") then
-            pcall(function() v.Enabled = false end)
+            pcall(function() v.Enabled=false end)
         end
     end
 end))
 
 -- ============================================================
--- HITBOX EXTENDER (com seleção de parte)
+-- HITBOX EXTENDER
 -- ============================================================
-local _hbConns = {}
-local HITBOX_PARTS = {
-    All          = {"Head","Torso","UpperTorso","LowerTorso","HumanoidRootPart",
-                    "Left Arm","Right Arm","Left Leg","Right Leg",
-                    "LeftUpperArm","RightUpperArm","LeftLowerArm","RightLowerArm",
-                    "LeftHand","RightHand","LeftUpperLeg","RightUpperLeg",
-                    "LeftLowerLeg","RightLowerLeg","LeftFoot","RightFoot"},
-    Head         = {"Head"},
-    Torso        = {"Torso","UpperTorso","LowerTorso"},
-    Arms         = {"Left Arm","Right Arm","LeftUpperArm","RightUpperArm","LeftLowerArm","RightLowerArm","LeftHand","RightHand"},
-    Legs         = {"Left Leg","Right Leg","LeftUpperLeg","RightUpperLeg","LeftLowerLeg","RightLowerLeg","LeftFoot","RightFoot"},
-    ["HRP Only"] = {"HumanoidRootPart"},
+local _hbConns={}
+local HITBOX_PARTS={
+    All      ={"Head","Torso","UpperTorso","LowerTorso","HumanoidRootPart","Left Arm","Right Arm","Left Leg","Right Leg","LeftUpperArm","RightUpperArm","LeftLowerArm","RightLowerArm","LeftHand","RightHand","LeftUpperLeg","RightUpperLeg","LeftLowerLeg","RightLowerLeg","LeftFoot","RightFoot"},
+    Head     ={"Head"},
+    Torso    ={"Torso","UpperTorso","LowerTorso"},
+    Arms     ={"Left Arm","Right Arm","LeftUpperArm","RightUpperArm","LeftLowerArm","RightLowerArm","LeftHand","RightHand"},
+    Legs     ={"Left Leg","Right Leg","LeftUpperLeg","RightUpperLeg","LeftLowerLeg","RightLowerLeg","LeftFoot","RightFoot"},
+    ["HRP Only"]={"HumanoidRootPart"},
 }
-local function ApplyHitboxToChar(char)
+local function ApplyHitboxChar(char)
     if not Cfg.Misc.HitboxExtender then return end
-    local partSet = {}
-    local parts = HITBOX_PARTS[Cfg.Misc.HitboxPart] or HITBOX_PARTS["All"]
-    for _,n in ipairs(parts) do partSet[n]=true end
+    local partSet={}
+    for _,n in ipairs(HITBOX_PARTS[Cfg.Misc.HitboxPart] or HITBOX_PARTS["All"]) do partSet[n]=true end
     for _,v in ipairs(char:GetDescendants()) do
         if v:IsA("BasePart") and partSet[v.Name] then
-            v.Size = Vector3.new(Cfg.Misc.HitboxSize, Cfg.Misc.HitboxSize, Cfg.Misc.HitboxSize)
-            v.LocalTransparencyModifier = 0.7
+            v.Size=Vector3.new(Cfg.Misc.HitboxSize,Cfg.Misc.HitboxSize,Cfg.Misc.HitboxSize)
+            v.LocalTransparencyModifier=0.7
         end
     end
 end
-local function SetHitbox(p, on)
-    if p == LP then return end
+local function SetHitbox(p,on)
+    if p==LP then return end
     if _hbConns[p] then _hbConns[p]:Disconnect(); _hbConns[p]=nil end
     if on then
-        if p.Character then ApplyHitboxToChar(p.Character) end
-        _hbConns[p] = p.CharacterAdded:Connect(function(c)
-            task.wait(0.5); ApplyHitboxToChar(c)
-        end)
+        if p.Character then ApplyHitboxChar(p.Character) end
+        _hbConns[p]=p.CharacterAdded:Connect(function(c) task.wait(0.5); ApplyHitboxChar(c) end)
     else
-        local char = p.Character; if not char then return end
+        local char=p.Character; if not char then return end
         for _,v in ipairs(char:GetDescendants()) do
             if v:IsA("BasePart") then v.Size=Vector3.new(2,2,1); v.LocalTransparencyModifier=0 end
         end
@@ -646,49 +602,170 @@ local function SetHitbox(p, on)
 end
 local function RefreshHitboxes()
     for _,p in ipairs(Players:GetPlayers()) do
-        if p ~= LP then SetHitbox(p, Cfg.Misc.HitboxExtender) end
+        if p~=LP then SetHitbox(p,Cfg.Misc.HitboxExtender) end
     end
 end
 
 -- ============================================================
 -- FREECAM
 -- ============================================================
-local _fcPart, _fcConn = nil, nil
+local _fcPart,_fcConn=nil,nil
 local function EnableFreeCam()
     if _fcConn then return end
-    _fcPart = Instance.new("Part"); _fcPart.Anchored=true; _fcPart.CanCollide=false
+    _fcPart=Instance.new("Part"); _fcPart.Anchored=true; _fcPart.CanCollide=false
     _fcPart.Transparency=1; _fcPart.Size=Vector3.new(0.1,0.1,0.1)
     _fcPart.CFrame=Cam.CFrame; _fcPart.Parent=Workspace
     Cam.CameraSubject=_fcPart; Cam.CameraType=Enum.CameraType.Scriptable
-    _fcConn = AC(RunService.RenderStepped:Connect(function()
+    _fcConn=AC(RunService.RenderStepped:Connect(function()
         if not Cfg.Misc.FreeCam then return end
-        local spd = Cfg.Misc.FCamSpeed * 0.6; local mv = Vector3.zero
-        if UIS:IsKeyDown(Enum.KeyCode.W) then mv = mv + Cam.CFrame.LookVector  * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then mv = mv - Cam.CFrame.LookVector  * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then mv = mv - Cam.CFrame.RightVector * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then mv = mv + Cam.CFrame.RightVector * spd end
-        if UIS:IsKeyDown(Enum.KeyCode.E) then mv = mv + Vector3.new(0, spd, 0) end
-        if UIS:IsKeyDown(Enum.KeyCode.Q) then mv = mv - Vector3.new(0, spd, 0) end
-        _fcPart.CFrame = _fcPart.CFrame + mv; Cam.CFrame = Cam.CFrame + mv
+        local spd=Cfg.Misc.FCamSpeed*0.6; local mv=Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then mv=mv+Cam.CFrame.LookVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then mv=mv-Cam.CFrame.LookVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then mv=mv-Cam.CFrame.RightVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then mv=mv+Cam.CFrame.RightVector*spd end
+        if UIS:IsKeyDown(Enum.KeyCode.E) then mv=mv+Vector3.new(0,spd,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.Q) then mv=mv-Vector3.new(0,spd,0) end
+        _fcPart.CFrame=_fcPart.CFrame+mv; Cam.CFrame=Cam.CFrame+mv
     end))
 end
 local function DisableFreeCam()
     if _fcConn then _fcConn:Disconnect(); _fcConn=nil end
     if _fcPart then pcall(function() _fcPart:Destroy() end); _fcPart=nil end
-    Cam.CameraType = Enum.CameraType.Custom
-    local char = LP.Character
+    Cam.CameraType=Enum.CameraType.Custom
+    local char=LP.Character
     if char then local h=char:FindFirstChildOfClass("Humanoid"); if h then Cam.CameraSubject=h end end
 end
 
 -- ============================================================
--- BOOMBOX / CLICK TP / TOOLS
+-- MODOS ESPECIAIS
 -- ============================================================
-local _boom = nil
+
+-- Spider-Man: anda sobre qualquer superfície
+local _spiderConn=nil
+local function EnableSpiderMan()
+    if _spiderConn then return end
+    _spiderConn=AC(RunService.Heartbeat:Connect(function()
+        if not Cfg.Modes.SpiderMan then return end
+        local char=LP.Character; if not char then return end
+        local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+        local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+        -- Raycast para baixo para detectar paredes laterais e teto
+        local dirs={
+            Vector3.new(0,-1,0),  -- chão
+            Vector3.new(0,1,0),   -- teto
+            CFrame.new(Vector3.zero,Cam.CFrame.LookVector).LookVector, -- frente
+        }
+        local rp=RaycastParams.new()
+        rp.FilterType=Enum.RaycastFilterType.Exclude
+        local ex={}
+        for _,v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then ex[#ex+1]=v end end
+        rp.FilterDescendantsInstances=ex
+        for _,dir in ipairs(dirs) do
+            local res=Workspace:Raycast(hrp.Position,dir*3.5,rp)
+            if res then
+                -- Cola o personagem na superfície
+                local norm=res.Normal
+                hum:ChangeState(Enum.HumanoidStateType.Swimming)
+                local targetCF=CFrame.new(res.Position+(norm*3),res.Position+(norm*3)+norm)
+                hrp.CFrame=hrp.CFrame:Lerp(targetCF,0.2)
+                break
+            end
+        end
+    end))
+end
+local function DisableSpiderMan()
+    if _spiderConn then _spiderConn:Disconnect(); _spiderConn=nil end
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+end
+
+-- Aquaman: não afoga
+local _aquaConn=nil
+local function EnableAquaman()
+    if _aquaConn then return end
+    _aquaConn=AC(RunService.Heartbeat:Connect(function()
+        if not Cfg.Modes.Aquaman then return end
+        local char=LP.Character; if not char then return end
+        local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+        -- Mantém estado Swimming funcional e impede afogamento
+        if hum:GetState()==Enum.HumanoidStateType.Swimming then
+            hum.Health=hum.Health  -- sem queda de HP
+        end
+        -- Seta capacidade de respiração máxima
+        pcall(function()
+            local humanoidDesc=char:FindFirstChildOfClass("Humanoid")
+            if humanoidDesc then
+                -- Remove o efeito de afogamento zerando o "swim" damage
+                local swimDmg=hum:FindFirstChild("SwimDamage") or hum:FindFirstChild("OxygenCheck")
+                if swimDmg then swimDmg:Disconnect() end
+            end
+        end)
+        -- Abordagem direta: quando submerso, manter HP
+        for _,v in ipairs(char:GetDescendants()) do
+            if v:IsA("Script") and v.Name:lower():find("drown") then
+                pcall(function() v.Disabled=true end)
+            end
+        end
+        -- Força regeneração quando HP cai por afogamento
+        if hum.Health < hum.MaxHealth and hum.Health > 0 then
+            -- Pequena correção: mantém HP estável
+            hum.Health = math.min(hum.MaxHealth, hum.Health + 0.5)
+        end
+    end))
+end
+local function DisableAquaman()
+    if _aquaConn then _aquaConn:Disconnect(); _aquaConn=nil end
+end
+
+-- No Fall Damage: sem dano de queda
+local _nfdConn=nil
+local _lastHP=100
+local function EnableNoFallDmg()
+    if _nfdConn then return end
+    _nfdConn=AC(RunService.Heartbeat:Connect(function()
+        if not Cfg.Modes.NoFallDmg then return end
+        local char=LP.Character; if not char then return end
+        local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+        -- Monitora queda de HP súbita (típico de fall damage)
+        -- Desabilita o FallingDown state
+        local st=hum:GetState()
+        if st==Enum.HumanoidStateType.Freefall then
+            -- Mantém registro do HP antes da queda
+            _lastHP=hum.Health
+        elseif st==Enum.HumanoidStateType.Landed then
+            -- Restaura HP se houve queda brusca
+            if hum.Health < _lastHP - 5 then
+                hum.Health=_lastHP
+            end
+        end
+        -- Abordagem adicional: desabilita o StepHeight para o estado de queda
+        hum.StateChanged:Once(function(old, new)
+            if new==Enum.HumanoidStateType.Landed then
+                if Cfg.Modes.NoFallDmg then
+                    task.delay(0.05, function()
+                        local c2=LP.Character; if not c2 then return end
+                        local h2=c2:FindFirstChildOfClass("Humanoid"); if not h2 then return end
+                        if h2.Health < _lastHP - 5 then h2.Health=_lastHP end
+                    end)
+                end
+            end
+        end)
+    end))
+end
+local function DisableNoFallDmg()
+    if _nfdConn then _nfdConn:Disconnect(); _nfdConn=nil end
+end
+
+-- ============================================================
+-- BOOMBOX / CLICK TP / TOOLS / SERVER
+-- ============================================================
+local _boom=nil
 local function PlayBoom(id)
     if _boom then pcall(function() _boom:Destroy() end); _boom=nil end
     if not id or id=="" then return end
-    _boom = Instance.new("Sound")
-    _boom.SoundId = "rbxassetid://" .. tostring(id):gsub("%D","")
+    _boom=Instance.new("Sound")
+    _boom.SoundId="rbxassetid://"..tostring(id):gsub("%D","")
     _boom.Volume=1; _boom.Looped=true; _boom.Name="_223Boom"; _boom.Parent=Workspace
     _boom:Play()
 end
@@ -696,392 +773,296 @@ local function StopBoom()
     if _boom then pcall(function() _boom:Stop(); _boom:Destroy() end); _boom=nil end
 end
 
-local _ctConn = nil
+local _ctConn=nil
 local function StartClickTp()
     if _ctConn then return end
-    _ctConn = AC(Mouse.Button1Down:Connect(function()
+    _ctConn=AC(Mouse.Button1Down:Connect(function()
         if not Cfg.Misc.ClickTp then return end
-        local char = LP.Character; if not char then return end
-        local hrp  = char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-        local hit  = Mouse.Hit; if not hit then return end
-        hrp.CFrame = CFrame.new(hit.Position + Vector3.new(0,3,0))
+        local char=LP.Character; if not char then return end
+        local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+        local hit=Mouse.Hit; if not hit then return end
+        hrp.CFrame=CFrame.new(hit.Position+Vector3.new(0,3,0))
     end))
 end
 
 local function GrabNearestTool()
-    local char = LP.Character; if not char then return nil end
-    local hrp  = char:FindFirstChild("HumanoidRootPart"); if not hrp then return nil end
-    local best, bestD = nil, math.huge
+    local char=LP.Character; if not char then return nil end
+    local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return nil end
+    local best,bestD=nil,math.huge
     for _,v in ipairs(Workspace:GetDescendants()) do
         if v:IsA("Tool") and not v:IsDescendantOf(Players) then
-            local part = v:FindFirstChildOfClass("BasePart")
+            local part=v:FindFirstChildOfClass("BasePart")
             if part then
-                local dist = (part.Position - hrp.Position).Magnitude
-                if dist < bestD then bestD=dist; best=v end
+                local d=(part.Position-hrp.Position).Magnitude
+                if d<bestD then bestD=d; best=v end
             end
         end
     end
     if best then
-        local bp = LP:FindFirstChild("Backpack")
+        local bp=LP:FindFirstChild("Backpack")
         if bp then best.Parent=bp; return best.Name end
     end
     return nil
 end
 local function GetMapTools()
-    local out = {}
+    local out={}
     for _,v in ipairs(Workspace:GetDescendants()) do
         if v:IsA("Tool") and not v:IsDescendantOf(Players) then
-            out[#out+1] = {name=v.Name, tool=v}
+            out[#out+1]={name=v.Name,tool=v}
         end
     end
     return out
 end
 local function DupeTool()
-    local nm = Cfg.Misc.DupeToolName:lower():gsub("%s+",""); if nm=="" then return end
+    local nm=Cfg.Misc.DupeToolName:lower():gsub("%s+",""); if nm=="" then return end
     local bp=LP:FindFirstChild("Backpack"); local char=LP.Character; local tool
-    if bp   then for _,v in ipairs(bp:GetChildren())   do if v:IsA("Tool") and v.Name:lower():find(nm,1,true) then tool=v; break end end end
+    if bp then for _,v in ipairs(bp:GetChildren()) do if v:IsA("Tool") and v.Name:lower():find(nm,1,true) then tool=v; break end end end
     if not tool and char then for _,v in ipairs(char:GetChildren()) do if v:IsA("Tool") and v.Name:lower():find(nm,1,true) then tool=v; break end end end
     if tool and bp then tool:Clone().Parent=bp end
 end
 
--- ============================================================
--- SERVER
--- ============================================================
-local function Rejoin()
-    pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
-end
+local function Rejoin() pcall(function() TeleportService:Teleport(game.PlaceId,LP) end) end
 local function ServerHop()
-    local ok,srv = pcall(function()
-        return HttpService:JSONDecode(HttpService:GetAsync(
-            "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+    local ok,srv=pcall(function()
+        return HttpService:JSONDecode(HttpService:GetAsync("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
     end)
     if ok and srv and srv.data then
         for _,s in ipairs(srv.data) do
-            if s.id ~= game.JobId and s.playing < s.maxPlayers then
-                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId,s.id,LP) end)
-                return
+            if s.id~=game.JobId and s.playing<s.maxPlayers then
+                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId,s.id,LP) end); return
             end
         end
     end
     pcall(function() TeleportService:Teleport(game.PlaceId,LP) end)
 end
 
--- ============================================================
--- CHAT LOG
--- ============================================================
-local _chatLog = {}
+-- Chat Log
+local _chatLog={}
 local function StartChatLog()
-    local function hookPlayer(p)
+    local function hookP(p)
         p.Chatted:Connect(function(msg)
-            table.insert(_chatLog,1,{player=p.Name, msg=msg, time=os.date("%H:%M:%S")})
-            if #_chatLog > 120 then table.remove(_chatLog) end
+            table.insert(_chatLog,1,{player=p.Name,msg=msg,time=os.date("%H:%M:%S")})
+            if #_chatLog>120 then table.remove(_chatLog) end
         end)
     end
-    for _,p in ipairs(Players:GetPlayers()) do hookPlayer(p) end
-    Players.PlayerAdded:Connect(hookPlayer)
+    for _,p in ipairs(Players:GetPlayers()) do hookP(p) end
+    Players.PlayerAdded:Connect(hookP)
 end
 
 -- ============================================================
--- TROLL — apenas funções que funcionam client-side sem admin
+-- TROLL
 -- ============================================================
-local _spinBG = nil
+local _spinBG=nil
 local function TrollSpin(on)
     if _spinBG then pcall(function() _spinBG:Destroy() end); _spinBG=nil end
     if not on then return end
-    local char = LP.Character; if not char then return end
-    local hrp  = char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-    _spinBG = Instance.new("BodyAngularVelocity", hrp)
-    _spinBG.AngularVelocity = Vector3.new(0, Cfg.Troll.SpinSpeed*10, 0)
-    _spinBG.MaxTorque = Vector3.new(0, 1e7, 0); _spinBG.P = 1e6
+    local char=LP.Character; if not char then return end
+    local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+    _spinBG=Instance.new("BodyAngularVelocity",hrp)
+    _spinBG.AngularVelocity=Vector3.new(0,Cfg.Troll.SpinSpeed*10,0)
+    _spinBG.MaxTorque=Vector3.new(0,1e7,0); _spinBG.P=1e6
 end
-
 local function TrollInvis(on)
-    local char = LP.Character; if not char then return end
+    local char=LP.Character; if not char then return end
     for _,p in ipairs(char:GetDescendants()) do
         if p:IsA("BasePart") or p:IsA("Decal") then
-            pcall(function() p.LocalTransparencyModifier = on and 1 or 0 end)
+            pcall(function() p.LocalTransparencyModifier=on and 1 or 0 end)
         end
     end
 end
-
 local function TrollScale(sv)
-    local char = LP.Character; if not char then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
-    if not ok or not desc then desc = Instance.new("HumanoidDescription") end
+    local char=LP.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local ok,desc=pcall(function() return hum:GetAppliedDescription() end)
+    if not ok or not desc then desc=Instance.new("HumanoidDescription") end
     desc.HeightScale=sv; desc.WidthScale=sv; desc.DepthScale=sv; desc.HeadScale=sv
     desc.ProportionScale=1; desc.BodyTypeScale=0
     pcall(function() hum:ApplyDescription(desc) end)
 end
-
-local _rainThread = nil
+local _rainThread=nil
 local function EnableRainbow(on)
     if _rainThread then task.cancel(_rainThread); _rainThread=nil end
     if not on then return end
-    local hue = 0
-    _rainThread = task.spawn(function()
+    local hue=0
+    _rainThread=task.spawn(function()
         while Cfg.Troll.Rainbow do
-            hue = (hue + Cfg.Troll.RainbowSpeed) % 1
-            local col = Color3.fromHSV(hue, 1, 1)
-            local char = LP.Character
-            if char then
-                for _,p in ipairs(char:GetDescendants()) do
-                    if p:IsA("BasePart") then pcall(function() p.Color=col end) end
-                end
-            end
+            hue=(hue+Cfg.Troll.RainbowSpeed)%1
+            local col=Color3.fromHSV(hue,1,1)
+            local char=LP.Character
+            if char then for _,p in ipairs(char:GetDescendants()) do if p:IsA("BasePart") then pcall(function() p.Color=col end) end end end
             task.wait(0.05)
         end
     end)
 end
-
-local _spamThread = nil
+local _spamThread=nil
 local function StartSpam()
     if _spamThread then return end
-    _spamThread = task.spawn(function()
+    _spamThread=task.spawn(function()
         while Cfg.Troll.ChatSpam do
-            -- Sistema legado
             pcall(function()
-                local rs = game:GetService("ReplicatedStorage")
-                local ev = rs:FindFirstChild("DefaultChatSystemChatEvents")
-                if ev then
-                    local req = ev:FindFirstChild("SayMessageRequest")
-                    if req then req:FireServer(Cfg.Troll.SpamMsg,"All") end
-                end
+                local rs=game:GetService("ReplicatedStorage")
+                local ev=rs:FindFirstChild("DefaultChatSystemChatEvents")
+                if ev then local req=ev:FindFirstChild("SayMessageRequest"); if req then req:FireServer(Cfg.Troll.SpamMsg,"All") end end
             end)
-            -- TextChatService (novo sistema Roblox)
             pcall(function()
-                local tcs = game:GetService("TextChatService")
-                local chans = tcs:FindFirstChild("TextChannels")
-                if chans then
-                    local ch = chans:FindFirstChild("RBXGeneral")
-                    if ch then ch:SendAsync(Cfg.Troll.SpamMsg) end
-                end
+                local tcs=game:GetService("TextChatService")
+                local chans=tcs:FindFirstChild("TextChannels")
+                if chans then local ch=chans:FindFirstChild("RBXGeneral"); if ch then ch:SendAsync(Cfg.Troll.SpamMsg) end end
             end)
-            task.wait(math.max(0.5, Cfg.Troll.SpamDelay))
+            task.wait(math.max(0.5,Cfg.Troll.SpamDelay))
         end
-        _spamThread = nil
+        _spamThread=nil
     end)
 end
 local function StopSpam() Cfg.Troll.ChatSpam=false end
-
-local _sndSpam = nil
+local _sndSpam=nil
 local function StartSoundSpam(id)
     if _sndSpam then pcall(function() _sndSpam:Destroy() end); _sndSpam=nil end
     if not id or id=="" then return end
-    _sndSpam = Instance.new("Sound")
-    _sndSpam.SoundId = "rbxassetid://" .. id:gsub("%D","")
-    _sndSpam.Volume=5; _sndSpam.Looped=true; _sndSpam.Name="_223Troll"; _sndSpam.Parent=Workspace
-    _sndSpam:Play()
+    _sndSpam=Instance.new("Sound"); _sndSpam.SoundId="rbxassetid://"..id:gsub("%D","")
+    _sndSpam.Volume=5; _sndSpam.Looped=true; _sndSpam.Name="_223Troll"; _sndSpam.Parent=Workspace; _sndSpam:Play()
 end
 local function StopSoundSpam()
     if _sndSpam then pcall(function() _sndSpam:Stop(); _sndSpam:Destroy() end); _sndSpam=nil end
 end
 
 -- ============================================================
--- RENDER LOOP PRINCIPAL
+-- RENDER LOOP
 -- ============================================================
 AC(RunService.RenderStepped:Connect(function()
-    local vs = Cam.ViewportSize
-    local cx, cy = vs.X/2, vs.Y/2
+    local vs=Cam.ViewportSize
+    local cx,cy=vs.X/2,vs.Y/2
 
-    -- ── FOV CIRCLE ──
-    -- Quando FOVFollow ativo: segue o mouse
-    -- Quando não: centro da tela
-    if Cfg.Aim.FOVFollow then
-        FOVC.Position = Vector2.new(Mouse.X, Mouse.Y)
-    else
-        FOVC.Position = Vector2.new(cx, cy)
-    end
-    FOVC.Radius  = Cfg.Aim.FOV
-    FOVC.Visible = Cfg.Aim.ShowFOV
+    -- FOV Circle
+    FOVC.Position = Cfg.Aim.FOVFollow and Vector2.new(Mouse.X,Mouse.Y) or Vector2.new(cx,cy)
+    FOVC.Radius   = Cfg.Aim.FOV
+    FOVC.Visible  = Cfg.Aim.ShowFOV
 
-    -- ── AIMBOT ──
+    -- Aimbot
     if Cfg.Aim.Aimbot and UIS:IsKeyDown(Cfg.Aim.AimKey) then
-        local t = ClosestTarget()
+        local t=ClosestTarget()
         if t and t.Character then
-            local pt = t.Character:FindFirstChild(Cfg.Aim.AimPart)
-                    or t.Character:FindFirstChild("HumanoidRootPart")
+            local pt=t.Character:FindFirstChild(Cfg.Aim.AimPart) or t.Character:FindFirstChild("HumanoidRootPart")
             if pt then
-                local pos = pt.Position
+                local pos=pt.Position
                 if Cfg.Aim.Prediction then
-                    local hrp = t.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then pos = pos + hrp.AssemblyLinearVelocity*(Cfg.Aim.PredStr*0.05) end
+                    local hrp=t.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then pos=pos+hrp.AssemblyLinearVelocity*(Cfg.Aim.PredStr*0.05) end
                 end
-                local alpha = math.clamp((100-Cfg.Aim.Smoothness)/100*0.5+0.02, 0.02, 1)
-                Cam.CFrame = Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position, pos), alpha)
+                local alpha=math.clamp((100-Cfg.Aim.Smoothness)/100*0.5+0.02,0.02,1)
+                Cam.CFrame=Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position,pos),alpha)
             end
         end
     end
 
-    -- ── ESP / XRAY LOOP ──
-    for player, d in pairs(ESPO) do
+    -- ESP
+    for player,d in pairs(ESPO) do
         if not player or not player.Parent then KillESP(player); continue end
-        local c   = player.Character
+        local c=player.Character
         if not c then HideAll(d); continue end
-        local hrp = c:FindFirstChild("HumanoidRootPart")
+        local hrp=c:FindFirstChild("HumanoidRootPart")
         if not hrp then HideAll(d); continue end
 
-        local dist = GetDist(c) or 99999
+        local dist=GetDist(c) or 99999
+        local bx,by,bw,bh=GetBounds(c)
 
-        -- Calcula bounds uma única vez por player por frame
-        local bx, by, bw, bh = GetBounds(c)
-
-        -- ─── ESP NORMAL ───────────────────────────────────────
-        local showESP = Cfg.ESP.Enabled
-            and dist <= Cfg.ESP.MaxDist
-            and (not Cfg.ESP.TeamCheck  or not SameTeam(player))
+        -- ESP NORMAL
+        local showESP=Cfg.ESP.Enabled
+            and dist<=Cfg.ESP.MaxDist
+            and (not Cfg.ESP.TeamCheck or not SameTeam(player))
             and (not next(Cfg.ESP.TrackList) or Cfg.ESP.TrackList[player.Name])
             and (not Cfg.ESP.WallCheck or IsVisible(c))
 
         if showESP and bx then
-            local x, y, w, h = bx, by, bw, bh
-
-            -- Box
+            local x,y,w,h=bx,by,bw,bh
             if Cfg.ESP.Box then
-                d.Box.Position=Vector2.new(x,y); d.Box.Size=Vector2.new(w,h)
-                d.Box.Color=Cfg.ESP.BoxColor; d.Box.Visible=true
+                d.Box.Position=Vector2.new(x,y); d.Box.Size=Vector2.new(w,h); d.Box.Color=Cfg.ESP.BoxColor; d.Box.Visible=true
             else d.Box.Visible=false end
-
-            -- Fill
             if Cfg.ESP.Fill then
-                d.Fill.Position=Vector2.new(x,y); d.Fill.Size=Vector2.new(w,h)
-                d.Fill.Color=Cfg.ESP.FillColor; d.Fill.Visible=true
+                d.Fill.Position=Vector2.new(x,y); d.Fill.Size=Vector2.new(w,h); d.Fill.Color=Cfg.ESP.FillColor; d.Fill.Visible=true
             else d.Fill.Visible=false end
-
-            -- Name
             if Cfg.ESP.Names then
-                d.Name.Position=Vector2.new(x+w/2, y-16)
-                d.Name.Text    = player.DisplayName
-                d.Name.Color   = Cfg.ESP.NameColor; d.Name.Visible=true
+                d.Name.Position=Vector2.new(x+w/2,y-16); d.Name.Text=player.DisplayName; d.Name.Color=Cfg.ESP.NameColor; d.Name.Visible=true
             else d.Name.Visible=false end
-
-            -- Distance
             if Cfg.ESP.Dist then
-                d.Dist.Position=Vector2.new(x+w/2, y+h+3)
-                d.Dist.Text    = math.floor(dist).."m"
-                d.Dist.Color   = Cfg.ESP.DistColor; d.Dist.Visible=true
+                d.Dist.Position=Vector2.new(x+w/2,y+h+3); d.Dist.Text=math.floor(dist).."m"; d.Dist.Color=Cfg.ESP.DistColor; d.Dist.Visible=true
             else d.Dist.Visible=false end
-
-            -- Health Bar (à esquerda)
             if Cfg.ESP.HP then
-                local hp, mhp = GetHP(c)
-                local r = math.clamp(hp/mhp, 0, 1)
-                d.HPBg.Position=Vector2.new(x-8,y); d.HPBg.Size=Vector2.new(4,h)
-                d.HPBg.Color=Cfg.ESP.HPBgColor; d.HPBg.Visible=true
-                local gr = math.clamp(2*r,0,1); local rd = math.clamp(2*(1-r),0,1)
-                d.HPFill.Color=Color3.new(rd,gr,0.05)
-                d.HPFill.Position=Vector2.new(x-8, y+h*(1-r))
-                d.HPFill.Size=Vector2.new(4, h*r); d.HPFill.Visible=true
-                d.HPText.Position=Vector2.new(x-13, y+h/2-5)
-                d.HPText.Text=math.floor(hp); d.HPText.Visible=true
+                local hp,mhp=GetHP(c); local r=math.clamp(hp/mhp,0,1)
+                d.HPBg.Position=Vector2.new(x-8,y); d.HPBg.Size=Vector2.new(4,h); d.HPBg.Color=Cfg.ESP.HPBgColor; d.HPBg.Visible=true
+                d.HPFill.Color=Color3.new(math.clamp(2*(1-r),0,1),math.clamp(2*r,0,1),0.05)
+                d.HPFill.Position=Vector2.new(x-8,y+h*(1-r)); d.HPFill.Size=Vector2.new(4,h*r); d.HPFill.Visible=true
+                d.HPText.Position=Vector2.new(x-13,y+h/2-5); d.HPText.Text=math.floor(hp); d.HPText.Visible=true
             else d.HPBg.Visible=false; d.HPFill.Visible=false; d.HPText.Visible=false end
-
-            -- Tracer
             if Cfg.ESP.Tracers then
-                d.Tracer.From=Vector2.new(cx,vs.Y); d.Tracer.To=Vector2.new(x+w/2, y+h)
-                d.Tracer.Color=Cfg.ESP.TracerColor; d.Tracer.Visible=true
+                d.Tracer.From=Vector2.new(cx,vs.Y); d.Tracer.To=Vector2.new(x+w/2,y+h); d.Tracer.Color=Cfg.ESP.TracerColor; d.Tracer.Visible=true
             else d.Tracer.Visible=false end
-
-            -- Tool na mão
             if Cfg.ESP.HeldTool then
-                local tn = GetHeldTool(c)
-                if tn then
-                    d.Tool.Position=Vector2.new(x+w/2, y-30)
-                    d.Tool.Text="["..tn.."]"; d.Tool.Color=Cfg.ESP.ToolColor; d.Tool.Visible=true
+                local tn=GetHeldTool(c)
+                if tn then d.Tool.Position=Vector2.new(x+w/2,y-30); d.Tool.Text="["..tn.."]"; d.Tool.Color=Cfg.ESP.ToolColor; d.Tool.Visible=true
                 else d.Tool.Visible=false end
             else d.Tool.Visible=false end
-
         else
             d.Box.Visible=false; d.Fill.Visible=false; d.Name.Visible=false
             d.Dist.Visible=false; d.HPBg.Visible=false; d.HPFill.Visible=false
             d.HPText.Visible=false; d.Tracer.Visible=false; d.Tool.Visible=false
         end
 
-        -- ─── XRAY ─────────────────────────────────────────────
-        local showXray = Cfg.Xray.Enabled
-            and dist <= Cfg.Xray.MaxDist
+        -- XRAY
+        local showXray=Cfg.Xray.Enabled
+            and dist<=Cfg.Xray.MaxDist
             and (not Cfg.Xray.TeamCheck or not SameTeam(player))
 
         if showXray and bx then
-            local x, y, w, h = bx, by, bw, bh
-
+            local x,y,w,h=bx,by,bw,bh
             if Cfg.Xray.Box then
-                d.XBox.Position=Vector2.new(x,y); d.XBox.Size=Vector2.new(w,h)
-                d.XBox.Color=Cfg.Xray.BoxColor; d.XBox.Visible=true
+                d.XBox.Position=Vector2.new(x,y); d.XBox.Size=Vector2.new(w,h); d.XBox.Color=Cfg.Xray.BoxColor; d.XBox.Visible=true
             else d.XBox.Visible=false end
-
             if Cfg.Xray.Fill then
-                d.XFill.Position=Vector2.new(x,y); d.XFill.Size=Vector2.new(w,h)
-                d.XFill.Color=Cfg.Xray.FillColor; d.XFill.Visible=true
+                d.XFill.Position=Vector2.new(x,y); d.XFill.Size=Vector2.new(w,h); d.XFill.Color=Cfg.Xray.FillColor; d.XFill.Visible=true
             else d.XFill.Visible=false end
-
             if Cfg.Xray.Names then
-                d.XName.Position=Vector2.new(x+w/2, y-16)
-                d.XName.Text    ="["..player.DisplayName.."]"
-                d.XName.Color   =Cfg.Xray.NameColor; d.XName.Visible=true
+                d.XName.Position=Vector2.new(x+w/2,y-16); d.XName.Text="["..player.DisplayName.."]"; d.XName.Color=Cfg.Xray.NameColor; d.XName.Visible=true
             else d.XName.Visible=false end
-
             if Cfg.Xray.Dist then
-                d.XDist.Position=Vector2.new(x+w/2, y+h+3)
-                d.XDist.Text    =math.floor(dist).."m"
-                d.XDist.Color   =Cfg.Xray.DistColor; d.XDist.Visible=true
+                d.XDist.Position=Vector2.new(x+w/2,y+h+3); d.XDist.Text=math.floor(dist).."m"; d.XDist.Color=Cfg.Xray.DistColor; d.XDist.Visible=true
             else d.XDist.Visible=false end
-
             if Cfg.Xray.HP then
-                local hp, mhp = GetHP(c)
-                local r = math.clamp(hp/mhp, 0, 1)
-                d.XHPBg.Position=Vector2.new(x+w+4,y); d.XHPBg.Size=Vector2.new(4,h)
-                d.XHPBg.Color=Cfg.Xray.HPBgColor; d.XHPBg.Visible=true
+                local hp,mhp=GetHP(c); local r=math.clamp(hp/mhp,0,1)
+                d.XHPBg.Position=Vector2.new(x+w+4,y); d.XHPBg.Size=Vector2.new(4,h); d.XHPBg.Color=Cfg.Xray.HPBgColor; d.XHPBg.Visible=true
                 d.XHPFill.Color=Cfg.Xray.HPColor
-                d.XHPFill.Position=Vector2.new(x+w+4, y+h*(1-r))
-                d.XHPFill.Size=Vector2.new(4, h*r); d.XHPFill.Visible=true
+                d.XHPFill.Position=Vector2.new(x+w+4,y+h*(1-r)); d.XHPFill.Size=Vector2.new(4,h*r); d.XHPFill.Visible=true
             else d.XHPBg.Visible=false; d.XHPFill.Visible=false end
-
             if Cfg.Xray.Tracers then
-                d.XTracer.From=Vector2.new(cx,vs.Y); d.XTracer.To=Vector2.new(x+w/2, y+h)
-                d.XTracer.Color=Cfg.Xray.TracerColor; d.XTracer.Visible=true
+                d.XTracer.From=Vector2.new(cx,vs.Y); d.XTracer.To=Vector2.new(x+w/2,y+h); d.XTracer.Color=Cfg.Xray.TracerColor; d.XTracer.Visible=true
             else d.XTracer.Visible=false end
-
-            -- Skeleton — variáveis locais renomeadas (b1/b2) para não conflitar com player
+            -- Skeleton
             if Cfg.Xray.Skeleton then
-                local isR6    = c:FindFirstChild("Torso") ~= nil
-                local boneSet = isR6 and BONES_R6 or BONES_R15
-                for bi, pair in ipairs(boneSet) do
-                    local ln = d.Skel[bi]; if not ln then continue end
-                    local b1 = c:FindFirstChild(pair[1])
-                    local b2 = c:FindFirstChild(pair[2])
+                local isR6=c:FindFirstChild("Torso")~=nil
+                local bones=isR6 and BONES_R6 or BONES_R15
+                for bi,pair in ipairs(bones) do
+                    local ln=d.Skel[bi]; if not ln then continue end
+                    local b1=c:FindFirstChild(pair[1]); local b2=c:FindFirstChild(pair[2])
                     if b1 and b2 then
-                        local s1, ok1 = W2S(b1.Position)
-                        local s2, ok2 = W2S(b2.Position)
-                        if ok1 or ok2 then
-                            ln.From=s1; ln.To=s2; ln.Color=Cfg.Xray.SkelColor; ln.Visible=true
+                        local s1,ok1=W2S(b1.Position); local s2,ok2=W2S(b2.Position)
+                        if ok1 or ok2 then ln.From=s1; ln.To=s2; ln.Color=Cfg.Xray.SkelColor; ln.Visible=true
                         else ln.Visible=false end
                     else ln.Visible=false end
                 end
-                for i = #boneSet+1, 14 do
-                    if d.Skel[i] then d.Skel[i].Visible=false end
-                end
-            else
-                for _,ln in ipairs(d.Skel) do ln.Visible=false end
-            end
+                for i=#bones+1,14 do if d.Skel[i] then d.Skel[i].Visible=false end end
+            else for _,ln in ipairs(d.Skel) do ln.Visible=false end end
         else
             d.XBox.Visible=false; d.XFill.Visible=false; d.XName.Visible=false
-            d.XDist.Visible=false; d.XHPBg.Visible=false; d.XHPFill.Visible=false
-            d.XTracer.Visible=false
+            d.XDist.Visible=false; d.XHPBg.Visible=false; d.XHPFill.Visible=false; d.XTracer.Visible=false
             for _,ln in ipairs(d.Skel) do ln.Visible=false end
         end
     end
 end))
 
--- Init ESP e eventos
+-- Init ESP
 for _,p in ipairs(Players:GetPlayers()) do MakeESP(p) end
-Players.PlayerAdded:Connect(function(p)
-    MakeESP(p)
-    if Cfg.Misc.HitboxExtender then SetHitbox(p,true) end
-end)
-Players.PlayerRemoving:Connect(function(p)
-    KillESP(p); _hbConns[p]=nil
-end)
+Players.PlayerAdded:Connect(function(p) MakeESP(p); if Cfg.Misc.HitboxExtender then SetHitbox(p,true) end end)
+Players.PlayerRemoving:Connect(function(p) KillESP(p); _hbConns[p]=nil end)
 LP.CharacterAdded:Connect(function()
     task.wait(0.5)
     ApplySpeed(); ApplyJump()
@@ -1089,23 +1070,23 @@ LP.CharacterAdded:Connect(function()
     if Cfg.Misc.Noclip then EnableNoclip() end
 end)
 
-StartAntiAFK(); StartNoRecoil(); StartInfAmmo(); StartClickTp(); StartChatLog()
+StartNoRecoil(); StartInfAmmo(); StartClickTp(); StartChatLog()
+EnableSpiderMan(); EnableAquaman(); EnableNoFallDmg()
 
 -- ============================================================
 -- KEYBINDS
 -- ============================================================
-local _guiVisible = true
-local _CBs = {}
+local _guiVisible=true
+local _CBs={}
 local function TR(k) if _CBs[k] then _CBs[k]() end end
 
-AC(UIS.InputBegan:Connect(function(inp, gp)
+AC(UIS.InputBegan:Connect(function(inp,gp)
     if gp then return end
-    if inp.UserInputType ~= Enum.UserInputType.Keyboard then return end
-    local kc = inp.KeyCode
+    if inp.UserInputType~=Enum.UserInputType.Keyboard then return end
+    local kc=inp.KeyCode
     if     kc==Cfg.Settings.ToggleKey  then _guiVisible=not _guiVisible; if _G._223HUB_Win then _G._223HUB_Win.Visible=_guiVisible end
     elseif kc==Cfg.Settings.ESPKey     then Cfg.ESP.Enabled=not Cfg.ESP.Enabled; TR("ESP")
     elseif kc==Cfg.Settings.AimbotKey  then Cfg.Aim.Aimbot=not Cfg.Aim.Aimbot; TR("Aim")
-    elseif kc==Cfg.Settings.SilentKey  then Cfg.Aim.SilentAim=not Cfg.Aim.SilentAim; if Cfg.Aim.SilentAim then HookSA() end; TR("SA")
     elseif kc==Cfg.Settings.FlyKey     then Cfg.Misc.Fly=not Cfg.Misc.Fly; if Cfg.Misc.Fly then EnableFly() else DisableFly() end; TR("Fly")
     elseif kc==Cfg.Settings.NoclipKey  then Cfg.Misc.Noclip=not Cfg.Misc.Noclip; if Cfg.Misc.Noclip then EnableNoclip() else DisableNoclip() end; TR("NC")
     elseif kc==Cfg.Settings.SpeedKey   then Cfg.Misc.Speed=not Cfg.Misc.Speed; ApplySpeed(); TR("Speed")
@@ -1115,14 +1096,14 @@ AC(UIS.InputBegan:Connect(function(inp, gp)
 end))
 
 -- ============================================================
--- ██████ GUI ██████
+-- GUI
 -- ============================================================
 if CoreGui:FindFirstChild("223TYHUB") then CoreGui:FindFirstChild("223TYHUB"):Destroy() end
-local SG = Instance.new("ScreenGui")
+local SG=Instance.new("ScreenGui")
 SG.Name="223TYHUB"; SG.ResetOnSpawn=false; SG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
 SG.IgnoreGuiInset=true; SG.Parent=CoreGui
 
-local C = {
+local C={
     bg0=Color3.fromRGB(7,7,10),   bg1=Color3.fromRGB(12,12,16),  bg2=Color3.fromRGB(18,18,22),
     bg3=Color3.fromRGB(26,26,31), bg4=Color3.fromRGB(34,34,40),
     red=Color3.fromRGB(165,20,20), redH=Color3.fromRGB(210,45,45), pink=Color3.fromRGB(200,55,70),
@@ -1131,10 +1112,11 @@ local C = {
     green=Color3.fromRGB(50,180,75), orange=Color3.fromRGB(220,130,40),
     gold=Color3.fromRGB(215,175,38), wht=Color3.fromRGB(255,255,255),
     text=Color3.fromRGB(208,208,213), dim=Color3.fromRGB(90,90,100), sep=Color3.fromRGB(28,28,34),
+    teal=Color3.fromRGB(20,180,160), tealH=Color3.fromRGB(40,210,190),
 }
 local FB=Enum.Font.GothamBold; local FM=Enum.Font.Gotham; local FC=Enum.Font.Code
 
--- ── LOADING SCREEN ──
+-- Loading Screen
 local LF=Instance.new("Frame",SG); LF.Size=UDim2.new(0,920,0,520); LF.Position=UDim2.new(0.5,-460,0.5,-260)
 LF.BackgroundColor3=C.bg0; LF.BorderSizePixel=0; LF.ZIndex=200
 Instance.new("UICorner",LF).CornerRadius=UDim.new(0,6); Instance.new("UIStroke",LF).Color=C.red
@@ -1143,11 +1125,12 @@ TLn(LF,false); TLn(LF,true)
 local LC=Instance.new("Frame",LF); LC.Size=UDim2.new(0,420,0,180); LC.Position=UDim2.new(0.5,-210,0.5,-135); LC.BackgroundTransparency=1
 local function LBL(p,t,sz,col,y,fn) local l=Instance.new("TextLabel",p); l.Text=t; l.Size=UDim2.new(1,0,0,sz); l.Position=UDim2.new(0,0,0,y); l.BackgroundTransparency=1; l.TextColor3=col; l.Font=fn or FB; l.TextSize=sz; l.TextXAlignment=Enum.TextXAlignment.Center end
 LBL(LC,"◈",50,C.red,0); LBL(LC,"223HUB",42,C.wht,52); LBL(LC,"HUB BY REVOLUCIONARI'US GROUP",14,C.dim,98,FM)
-LBL(LC,"SCRIPT FEITO POR BRUNO223J AND TY  ·  DISCORD: .223j | frty2017",11,C.gold,116,FM); LBL(LC,"v9.0  ·  Public Beta",10,C.red,132,FC)
+LBL(LC,"SCRIPT FEITO POR BRUNO223J AND TY  ·  DISCORD: .223j | frty2017",11,C.gold,116,FM)
+LBL(LC,"v10.0  ·  Public Beta",10,C.red,132,FC)
 local BC=Instance.new("Frame",LF); BC.Size=UDim2.new(0,360,0,5); BC.Position=UDim2.new(0.5,-180,0.5,68); BC.BackgroundColor3=C.bg4; BC.BorderSizePixel=0; Instance.new("UICorner",BC).CornerRadius=UDim.new(1,0)
 local BF=Instance.new("Frame",BC); BF.Size=UDim2.new(0,0,1,0); BF.BackgroundColor3=C.red; BF.BorderSizePixel=0; Instance.new("UICorner",BF).CornerRadius=UDim.new(1,0)
 local LST=Instance.new("TextLabel",LF); LST.Size=UDim2.new(0,360,0,16); LST.Position=UDim2.new(0.5,-180,0.5,80); LST.BackgroundTransparency=1; LST.TextColor3=C.dim; LST.Font=FC; LST.TextSize=10; LST.TextXAlignment=Enum.TextXAlignment.Center; LST.Text="Inicializando..."
-local LSTEPS={{0.1,"Verificando ambiente..."},{0.25,"Carregando ESP & Xray..."},{0.4,"Aimbot..."},{0.55,"Misc & Troll..."},{0.7,"Keybinds..."},{0.85,"Saves..."},{0.95,"Finalizando..."},{1.0,"Bem-vindo, "..LP.Name.."!"}}
+local LSTEPS={{0.1,"Verificando..."},{0.25,"ESP & Xray..."},{0.4,"Aimbot..."},{0.55,"Modos..."},{0.7,"Keybinds..."},{0.85,"Saves..."},{0.95,"Finalizando..."},{1.0,"Bem-vindo, "..LP.Name.."!"}}
 task.spawn(function()
     local st=tick()
     while true do
@@ -1165,7 +1148,7 @@ for _,v in ipairs(LF:GetDescendants()) do
 end
 task.wait(0.55); LF:Destroy()
 
--- ── MAIN WINDOW ──
+-- Main Window
 local Win=Instance.new("Frame",SG)
 Win.Name="Win"; Win.Size=UDim2.new(0,920,0,520); Win.Position=UDim2.new(0.5,-460,0.5,-260)
 Win.BackgroundColor3=C.bg0; Win.BorderSizePixel=0; Win.Active=true; Win.Draggable=true
@@ -1177,7 +1160,6 @@ Instance.new("UICorner",TB).CornerRadius=UDim.new(0,6)
 local _=Instance.new("Frame",TB); _.Size=UDim2.new(1,0,0,6); _.BackgroundColor3=C.bg1; _.Position=UDim2.new(0,0,1,-6); _.BorderSizePixel=0
 local _=Instance.new("Frame",Win); _.Size=UDim2.new(1,0,0,1); _.Position=UDim2.new(0,0,0,38); _.BackgroundColor3=C.red; _.BorderSizePixel=0
 
--- Logo
 local LG=Instance.new("Frame",TB); LG.Size=UDim2.new(0,218,1,0); LG.BackgroundTransparency=1
 local _=Instance.new("TextLabel",LG); _.Text="◈"; _.Size=UDim2.new(0,30,1,0); _.Position=UDim2.new(0,8,0,0); _.BackgroundTransparency=1; _.TextColor3=C.red; _.Font=FB; _.TextSize=20
 local _=Instance.new("TextLabel",LG); _.Text="223HUB"; _.Size=UDim2.new(1,-40,0,22); _.Position=UDim2.new(0,36,0,5); _.BackgroundTransparency=1; _.TextColor3=C.wht; _.Font=FB; _.TextSize=15; _.TextXAlignment=Enum.TextXAlignment.Left
@@ -1191,7 +1173,7 @@ local TA=Instance.new("Frame",TB); TA.Size=UDim2.new(1,-258,1,0); TA.Position=UD
 local TALL=Instance.new("UIListLayout",TA); TALL.FillDirection=Enum.FillDirection.Horizontal; TALL.VerticalAlignment=Enum.VerticalAlignment.Center; TALL.Padding=UDim.new(0,1)
 local CF=Instance.new("Frame",Win); CF.Size=UDim2.new(1,-16,1,-52); CF.Position=UDim2.new(0,8,0,48); CF.BackgroundTransparency=1; CF.BorderSizePixel=0
 
--- ── UI HELPERS ──
+-- UI Components
 local function Panel(parent,title,x,y,w,h,ac)
     local f=Instance.new("Frame",parent); f.Position=UDim2.new(0,x,0,y); f.Size=UDim2.new(0,w,0,h); f.BackgroundColor3=C.bg2; f.BorderSizePixel=0
     Instance.new("UICorner",f).CornerRadius=UDim.new(0,5); Instance.new("UIStroke",f).Color=C.sep
@@ -1210,14 +1192,15 @@ local function Toggle(parent,label,order,getV,setV,cbKey,ac)
     Instance.new("UICorner",f).CornerRadius=UDim.new(0,4)
     local chk=Instance.new("Frame",f); chk.Size=UDim2.new(0,16,0,16); chk.Position=UDim2.new(0,7,0.5,-8); chk.BackgroundColor3=C.bg4; chk.BorderSizePixel=0; Instance.new("UICorner",chk).CornerRadius=UDim.new(0,4)
     local cS=Instance.new("UIStroke",chk); cS.Color=C.sep; cS.Thickness=1
-    local ck=Instance.new("TextLabel",chk); ck.Text="✓"; ck.Size=UDim2.new(1,0,1,0); ck.BackgroundTransparency=1; ck.TextColor3=col; ck.Font=FB; ck.TextSize=13; ck.Visible=getV()
+    local ck=Instance.new("TextLabel",chk); ck.Text="✓"; ck.Size=UDim2.new(1,0,1,0); ck.BackgroundTransparency=1; ck.TextColor3=col; ck.Font=FB; ck.TextSize=13
     local lb=Instance.new("TextLabel",f); lb.Text=label; lb.Size=UDim2.new(1,-36,1,0); lb.Position=UDim2.new(0,30,0,0); lb.BackgroundTransparency=1; lb.TextColor3=C.text; lb.Font=FM; lb.TextSize=12; lb.TextXAlignment=Enum.TextXAlignment.Left
     local btn=Instance.new("TextButton",f); btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1; btn.Text=""
     local function ref()
-        local v=getV(); ck.Visible=v
-        chk.BackgroundColor3 = v and Color3.fromRGB(30,8,30) or C.bg4
-        cS.Color             = v and col or C.sep
-        f.BackgroundColor3   = v and Color3.fromRGB(20,6,20) or C.bg3
+        local v=getV()
+        ck.Visible=v
+        chk.BackgroundColor3=v and Color3.fromRGB(30,8,30) or C.bg4
+        cS.Color=v and col or C.sep
+        f.BackgroundColor3=v and Color3.fromRGB(20,6,20) or C.bg3
     end
     if cbKey then _CBs[cbKey]=ref end
     btn.MouseButton1Click:Connect(function() setV(not getV()); ref() end)
@@ -1234,6 +1217,7 @@ UIS.InputChanged:Connect(function(i)
         local v=math.floor(s.mn+r*(s.mx-s.mn)); s.fill.Size=UDim2.new(r,0,1,0); s.vl.Text=v.." / "..s.mx; s.cb(v)
     end
 end)
+
 local function Slider(parent,label,mn,mx,def,order,cb)
     local cur=def
     local hf=Instance.new("Frame",parent); hf.Size=UDim2.new(1,0,0,16); hf.BackgroundTransparency=1; hf.LayoutOrder=order
@@ -1291,6 +1275,7 @@ local function Btn(parent,text,order,cb,bg,tc)
     b.MouseLeave:Connect(function() b.BackgroundColor3=bgc end)
     b.MouseButton1Click:Connect(cb); return b
 end
+
 local function Sep(p,o) local s=Instance.new("Frame",p); s.Size=UDim2.new(1,0,0,1); s.BackgroundColor3=C.sep; s.BorderSizePixel=0; s.LayoutOrder=o end
 local function SL(p,t,o,c) local f=Instance.new("Frame",p); f.Size=UDim2.new(1,0,0,15); f.BackgroundTransparency=1; f.LayoutOrder=o; local l=Instance.new("TextLabel",f); l.Text=t; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=c or C.red; l.Font=FB; l.TextSize=10; l.TextXAlignment=Enum.TextXAlignment.Left end
 local function IL(p,t,o,c) local f=Instance.new("Frame",p); f.Size=UDim2.new(1,0,0,15); f.BackgroundTransparency=1; f.LayoutOrder=o; local l=Instance.new("TextLabel",f); l.Text=t; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=c or C.text; l.Font=FM; l.TextSize=11; l.TextXAlignment=Enum.TextXAlignment.Left end
@@ -1306,23 +1291,25 @@ local function StatusLbl(parent,order)
     return function(msg,col) l.Text=msg; l.TextColor3=col or C.green; task.delay(3,function() if l.Text==msg then l.Text="" end end) end
 end
 
-local function EnableBadge(parent,order,label,tag,getCfg,setCfg,cbKey,acColor)
-    local ac=acColor or C.red
-    local er=Instance.new("Frame",parent); er.Size=UDim2.new(1,0,0,28); er.BackgroundColor3=Color3.fromRGB(22,6,6); er.BorderSizePixel=0; er.LayoutOrder=order
-    Instance.new("UICorner",er).CornerRadius=UDim.new(0,4)
+local function EnableBadge(parent,order,label,tag,getCfg,setCfg,cbKey,ac)
+    local acol=ac or C.red
+    local er=Instance.new("Frame",parent); er.Size=UDim2.new(1,0,0,28); er.BackgroundColor3=Color3.fromRGB(22,6,6); er.BorderSizePixel=0; er.LayoutOrder=order; Instance.new("UICorner",er).CornerRadius=UDim.new(0,4)
     local ec=Instance.new("Frame",er); ec.Size=UDim2.new(0,16,0,16); ec.Position=UDim2.new(0,7,0.5,-8); ec.BackgroundColor3=C.bg4; ec.BorderSizePixel=0; Instance.new("UICorner",ec).CornerRadius=UDim.new(0,4)
     local eS=Instance.new("UIStroke",ec); eS.Color=C.sep; eS.Thickness=1
-    local eTk=Instance.new("TextLabel",ec); eTk.Text="✓"; eTk.Size=UDim2.new(1,0,1,0); eTk.BackgroundTransparency=1; eTk.TextColor3=ac; eTk.Font=FB; eTk.TextSize=13; eTk.Visible=getCfg()
+    local eTk=Instance.new("TextLabel",ec); eTk.Text="✓"; eTk.Size=UDim2.new(1,0,1,0); eTk.BackgroundTransparency=1; eTk.TextColor3=acol; eTk.Font=FB; eTk.TextSize=13
     local eL=Instance.new("TextLabel",er); eL.Text=label; eL.Size=UDim2.new(1,-56,1,0); eL.Position=UDim2.new(0,30,0,0); eL.BackgroundTransparency=1; eL.TextColor3=C.wht; eL.Font=FB; eL.TextSize=13; eL.TextXAlignment=Enum.TextXAlignment.Left
-    local eBg=Instance.new("TextLabel",er); eBg.Text=tag; eBg.Size=UDim2.new(0,40,0,16); eBg.Position=UDim2.new(1,-44,0.5,-8); eBg.BackgroundColor3=ac; eBg.TextColor3=C.wht; eBg.Font=FB; eBg.TextSize=9; eBg.BorderSizePixel=0; Instance.new("UICorner",eBg).CornerRadius=UDim.new(0,4)
+    local eBg=Instance.new("TextLabel",er); eBg.Text=tag; eBg.Size=UDim2.new(0,40,0,16); eBg.Position=UDim2.new(1,-44,0.5,-8); eBg.BackgroundColor3=acol; eBg.TextColor3=C.wht; eBg.Font=FB; eBg.TextSize=9; eBg.BorderSizePixel=0; Instance.new("UICorner",eBg).CornerRadius=UDim.new(0,4)
     local eBtn=Instance.new("TextButton",er); eBtn.Size=UDim2.new(1,0,1,0); eBtn.BackgroundTransparency=1; eBtn.Text=""
     local function ref()
-        local v=getCfg(); eTk.Visible=v
-        ec.BackgroundColor3=v and Color3.fromRGB(35,7,7) or C.bg4; eS.Color=v and ac or C.sep
+        local v=getCfg()
+        eTk.Visible=v
+        ec.BackgroundColor3=v and Color3.fromRGB(35,7,7) or C.bg4
+        eS.Color=v and acol or C.sep
         er.BackgroundColor3=v and Color3.fromRGB(35,9,9) or Color3.fromRGB(22,6,6)
     end
     if cbKey then _CBs[cbKey]=ref end
     eBtn.MouseButton1Click:Connect(function() setCfg(not getCfg()); ref() end)
+    ref()
 end
 
 local function PLWidget(parent,startOrder,title,data,ac)
@@ -1360,10 +1347,10 @@ local function PLWidget(parent,startOrder,title,data,ac)
     Rb(); return Rb
 end
 
--- ── TAB SYSTEM ──
+-- Tab System
 local _pages={}; local _curTab=nil
 local function MakeTab(name,order,col)
-    local btn=Instance.new("TextButton",TA); btn.Text=name:upper(); btn.Size=UDim2.new(0,78,0,38); btn.BackgroundTransparency=1; btn.TextColor3=C.dim; btn.Font=FB; btn.TextSize=11; btn.BorderSizePixel=0; btn.LayoutOrder=order
+    local btn=Instance.new("TextButton",TA); btn.Text=name:upper(); btn.Size=UDim2.new(0,74,0,38); btn.BackgroundTransparency=1; btn.TextColor3=C.dim; btn.Font=FB; btn.TextSize=11; btn.BorderSizePixel=0; btn.LayoutOrder=order
     local ul=Instance.new("Frame",btn); ul.Size=UDim2.new(0.75,0,0,2); ul.Position=UDim2.new(0.125,0,1,-2); ul.BackgroundColor3=col or C.redH; ul.BorderSizePixel=0; ul.Visible=false
     local pg=Instance.new("Frame",CF); pg.Size=UDim2.new(1,0,1,0); pg.BackgroundTransparency=1; pg.Visible=false
     _pages[name]={btn=btn,ul=ul,pg=pg}
@@ -1378,8 +1365,9 @@ local PMain    = MakeTab("Main",    1)
 local PVis     = MakeTab("Visuals", 2)
 local PXray    = MakeTab("Xray",    3, C.blueH)
 local PMisc    = MakeTab("Misc",    4)
-local PTroll   = MakeTab("Troll",   5, C.purpleH)
-local PSettings= MakeTab("Settings",6)
+local PModes   = MakeTab("Modos",   5, C.tealH)
+local PTroll   = MakeTab("Troll",   6, C.purpleH)
+local PSettings= MakeTab("Settings",7)
 _pages["Main"].btn.TextColor3=C.wht; _pages["Main"].ul.Visible=true; _pages["Main"].pg.Visible=true; _curTab="Main"
 
 -- ============================================================
@@ -1397,27 +1385,24 @@ Slider(AimP,"Prediction Strength",1,10,1,4,function(v) Cfg.Aim.PredStr=v end)
 Sel(AimP,"Target Part",{"Head","HumanoidRootPart","Torso","LeftLowerArm","RightLowerArm"},"Head",7,function(v) Cfg.Aim.AimPart=v end)
 Slider(AimP,"Smoothness",1,100,15,10,function(v) Cfg.Aim.Smoothness=v end)
 Sep(AimP,13); SL(AimP,"AUXÍLIOS DE MIRA",14)
-Toggle(AimP,"Silent Aim",       15,function() return Cfg.Aim.SilentAim end,function(v) Cfg.Aim.SilentAim=v; if v then HookSA() end end,"SA")
-Slider(AimP,"Silent Aim Chance (%)",1,100,100,17,function(v) Cfg.Aim.SAChance=v end)
-Toggle(AimP,"No Recoil",        20,function() return Cfg.Aim.NoRecoil  end,function(v) Cfg.Aim.NoRecoil=v    end)
-Toggle(AimP,"Infinite Ammo",    21,function() return Cfg.Aim.InfAmmo   end,function(v) Cfg.Aim.InfAmmo=v     end)
-KB(AimP,"Aim Key (segurar)",23,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
-PLWidget(AimP,25,"LISTA DE EXCLUSÃO",Cfg.Aim.Blacklist)
+Toggle(AimP,"No Recoil",        15,function() return Cfg.Aim.NoRecoil   end,function(v) Cfg.Aim.NoRecoil=v    end)
+Toggle(AimP,"Fast Reload",      16,function() return Cfg.Aim.FastReload end,function(v) Cfg.Aim.FastReload=v  end)
+Toggle(AimP,"Infinite Ammo",    17,function() return Cfg.Aim.InfAmmo    end,function(v) Cfg.Aim.InfAmmo=v     end)
+KB(AimP,"Aim Key (segurar)",19,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
+PLWidget(AimP,21,"LISTA DE EXCLUSÃO",Cfg.Aim.Blacklist)
 
--- FOV
-Toggle(FovP,"Show FOV (sempre visível)",0,function() return Cfg.Aim.ShowFOV  end,function(v) Cfg.Aim.ShowFOV=v  end)
-Toggle(FovP,"Usar FOV no Aimbot/SA",    1,function() return Cfg.Aim.UseFOV   end,function(v) Cfg.Aim.UseFOV=v   end)
+Toggle(FovP,"Show FOV (sempre visível)",0,function() return Cfg.Aim.ShowFOV   end,function(v) Cfg.Aim.ShowFOV=v   end)
+Toggle(FovP,"Usar FOV no Aimbot",       1,function() return Cfg.Aim.UseFOV    end,function(v) Cfg.Aim.UseFOV=v    end)
 Toggle(FovP,"FOV Segue o Mouse",        2,function() return Cfg.Aim.FOVFollow end,function(v) Cfg.Aim.FOVFollow=v end)
 Slider(FovP,"FOV Size (pixels)",10,800,120,4,function(v) Cfg.Aim.FOV=v end)
 Slider(FovP,"FOV Thickness",1,5,2,7,function(v) FOVC.Thickness=v end)
 
--- TriggerBot
 Toggle(TrgP,"TriggerBot",   0,function() return Cfg.Trigger.Enabled   end,function(v) Cfg.Trigger.Enabled=v   end)
 Toggle(TrgP,"Team Check",   1,function() return Cfg.Trigger.TeamCheck end,function(v) Cfg.Trigger.TeamCheck=v end)
 Slider(TrgP,"Delay (ms)",0,2000,100,3,function(v) Cfg.Trigger.Delay=v end)
 
 -- ============================================================
--- PAGE: VISUALS — ESP
+-- PAGE: VISUALS
 -- ============================================================
 local EspP  = Panel(PVis,"ESP",         0,  0,435,468)
 local TrackP= Panel(PVis,"Track Player",443,0,435,468)
@@ -1434,7 +1419,6 @@ Toggle(EspP,"Team Check",       8,function() return Cfg.ESP.TeamCheck end,functi
 Toggle(EspP,"Item na Mão",      9,function() return Cfg.ESP.HeldTool  end,function(v) Cfg.ESP.HeldTool=v  end)
 Slider(EspP,"Max Distance",50,2000,500,11,function(v) Cfg.ESP.MaxDist=v end)
 
--- Track Player
 do
     local rb=PLWidget(TrackP,0,"JOGADORES RASTREADOS",Cfg.ESP.TrackList)
     Sep(TrackP,6); SL(TrackP,"SERVIDOR",7)
@@ -1462,8 +1446,8 @@ end
 -- ============================================================
 -- PAGE: XRAY
 -- ============================================================
-local XrayP= Panel(PXray,"Xray (Wallhack)",0,0,435,468,C.blue)
-local SkelP= Panel(PXray,"Skeleton",443,0,435,260,C.blue)
+local XrayP=Panel(PXray,"Xray (Wallhack)",0,0,435,468,C.blue)
+local SkelP=Panel(PXray,"Skeleton",443,0,435,260,C.blue)
 
 EnableBadge(XrayP,0,"Xray Enabled","XRAY",function() return Cfg.Xray.Enabled end,function(v) Cfg.Xray.Enabled=v end,"Xray",C.blue)
 Toggle(XrayP,"Box ESP",    1,function() return Cfg.Xray.Box       end,function(v) Cfg.Xray.Box=v       end,nil,C.blueH)
@@ -1475,8 +1459,6 @@ Toggle(XrayP,"Distance",   6,function() return Cfg.Xray.Dist      end,function(v
 Toggle(XrayP,"Team Check", 7,function() return Cfg.Xray.TeamCheck end,function(v) Cfg.Xray.TeamCheck=v end,nil,C.blueH)
 Slider(XrayP,"Max Distance",50,5000,1000,9,function(v) Cfg.Xray.MaxDist=v end)
 Toggle(SkelP,"Skeleton",   0,function() return Cfg.Xray.Skeleton  end,function(v) Cfg.Xray.Skeleton=v  end,nil,C.blueH)
-Sep(SkelP,2); SL(SkelP,"NOTA",3,C.blueH)
-do local f=Instance.new("Frame",SkelP); f.Size=UDim2.new(1,0,0,40); f.BackgroundTransparency=1; f.LayoutOrder=4; local l=Instance.new("TextLabel",f); l.Text="Skeleton detecta R15/R6 automaticamente. Xray mostra jogadores mesmo atrás de paredes."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
 
 -- ============================================================
 -- PAGE: MISC
@@ -1498,24 +1480,22 @@ Toggle(MovP,"Infinite Jump",18,function() return Cfg.Misc.InfJump  end,function(
 Sel(MovP,"Jump Method",{"JumpPower","UseJumpPower"},"JumpPower",20,function(v) Cfg.Misc.JumpMethod=v; ApplyJump() end)
 Slider(MovP,"Jump Power",1,500,80,22,function(v) Cfg.Misc.JumpPower=v; if Cfg.Misc.JumpMod then ApplyJump() end end)
 Sep(MovP,25); SL(MovP,"OUTROS",26)
-Toggle(MovP,"Anti Ragdoll",27,function() return Cfg.Misc.AntiRag  end,function(v) Cfg.Misc.AntiRag=v  end)
+Toggle(MovP,"Anti Ragdoll", 27,function() return Cfg.Misc.AntiRag  end,function(v) Cfg.Misc.AntiRag=v  end)
 Toggle(MovP,"Click Teleport",28,function() return Cfg.Misc.ClickTp end,function(v) Cfg.Misc.ClickTp=v  end)
-do local f=Instance.new("Frame",MovP); f.Size=UDim2.new(1,0,0,13); f.BackgroundTransparency=1; f.LayoutOrder=29; local l=Instance.new("TextLabel",f); l.Text="Clique no chão para teletransportar"; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextXAlignment=Enum.TextXAlignment.Left end
+Toggle(MovP,"Anti-AFK",     29,function() return Cfg.Misc.AntiAFK  end,function(v) Cfg.Misc.AntiAFK=v  end)
 
--- Utilidades
-SL(UtilP,"GERAL",0)
-Toggle(UtilP,"Anti-AFK",         1,function() return Cfg.Misc.AntiAFK        end,function(v) Cfg.Misc.AntiAFK=v        end)
-Toggle(UtilP,"Hitbox Extender",  3,function() return Cfg.Misc.HitboxExtender end,function(v) Cfg.Misc.HitboxExtender=v; RefreshHitboxes() end)
-Slider(UtilP,"Hitbox Size",1,80,8,5,function(v) Cfg.Misc.HitboxSize=v; if Cfg.Misc.HitboxExtender then RefreshHitboxes() end end)
-Sel(UtilP,"Parte da Hitbox",{"All","Head","Torso","Arms","Legs","HRP Only"},"All",7,function(v) Cfg.Misc.HitboxPart=v; if Cfg.Misc.HitboxExtender then RefreshHitboxes() end end)
-Sep(UtilP,10); SL(UtilP,"CÂMERA LIVRE",11)
-Toggle(UtilP,"FreeCam",         12,function() return Cfg.Misc.FreeCam end,function(v) Cfg.Misc.FreeCam=v; if v then EnableFreeCam() else DisableFreeCam() end end,"FC")
-Slider(UtilP,"FreeCam Speed",1,30,1,14,function(v) Cfg.Misc.FCamSpeed=v end)
-do local f=Instance.new("Frame",UtilP); f.Size=UDim2.new(1,0,0,13); f.BackgroundTransparency=1; f.LayoutOrder=16; local l=Instance.new("TextLabel",f); l.Text="W/A/S/D mover · E subir · Q descer"; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextXAlignment=Enum.TextXAlignment.Left end
-Sep(UtilP,17); SL(UtilP,"TOOLS DO MAPA",18)
+SL(UtilP,"HITBOX",0)
+Toggle(UtilP,"Hitbox Extender",  1,function() return Cfg.Misc.HitboxExtender end,function(v) Cfg.Misc.HitboxExtender=v; RefreshHitboxes() end)
+Slider(UtilP,"Hitbox Size",1,80,8,3,function(v) Cfg.Misc.HitboxSize=v; if Cfg.Misc.HitboxExtender then RefreshHitboxes() end end)
+Sel(UtilP,"Parte da Hitbox",{"All","Head","Torso","Arms","Legs","HRP Only"},"All",5,function(v) Cfg.Misc.HitboxPart=v; if Cfg.Misc.HitboxExtender then RefreshHitboxes() end end)
+Sep(UtilP,8); SL(UtilP,"CÂMERA LIVRE",9)
+Toggle(UtilP,"FreeCam",         10,function() return Cfg.Misc.FreeCam end,function(v) Cfg.Misc.FreeCam=v; if v then EnableFreeCam() else DisableFreeCam() end end,"FC")
+Slider(UtilP,"FreeCam Speed",1,30,1,12,function(v) Cfg.Misc.FCamSpeed=v end)
+do local f=Instance.new("Frame",UtilP); f.Size=UDim2.new(1,0,0,13); f.BackgroundTransparency=1; f.LayoutOrder=14; local l=Instance.new("TextLabel",f); l.Text="W/A/S/D mover · E subir · Q descer"; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextXAlignment=Enum.TextXAlignment.Left end
+Sep(UtilP,15); SL(UtilP,"TOOLS DO MAPA",16)
 do
-    local gs=StatusLbl(UtilP,19)
-    local tlH=Instance.new("Frame",UtilP); tlH.Size=UDim2.new(1,0,0,105); tlH.BackgroundColor3=C.bg4; tlH.BorderSizePixel=0; tlH.LayoutOrder=20; Instance.new("UICorner",tlH).CornerRadius=UDim.new(0,4)
+    local gs=StatusLbl(UtilP,17)
+    local tlH=Instance.new("Frame",UtilP); tlH.Size=UDim2.new(1,0,0,100); tlH.BackgroundColor3=C.bg4; tlH.BorderSizePixel=0; tlH.LayoutOrder=18; Instance.new("UICorner",tlH).CornerRadius=UDim.new(0,4)
     local tlS=Instance.new("ScrollingFrame",tlH); tlS.Size=UDim2.new(1,-8,1,-8); tlS.Position=UDim2.new(0,4,0,4); tlS.BackgroundTransparency=1; tlS.BorderSizePixel=0; tlS.ScrollBarThickness=2; tlS.ScrollBarImageColor3=C.red; tlS.CanvasSize=UDim2.new(0,0,0,0); tlS.AutomaticCanvasSize=Enum.AutomaticSize.Y
     Instance.new("UIListLayout",tlS).Padding=UDim.new(0,2)
     local function RefTools()
@@ -1529,38 +1509,80 @@ do
             local cap=entry.tool
             gb.MouseButton1Click:Connect(function()
                 local bp=LP:FindFirstChild("Backpack")
-                if bp then pcall(function() cap.Parent=bp end); gs("✓ Pegou: "..entry.name,C.green) else gs("❌ Falhou",C.redH) end
+                if bp then pcall(function() cap.Parent=bp end); gs("✓ "..entry.name,C.green) else gs("❌ Falhou",C.redH) end
             end)
         end
     end
-    Btn(UtilP,"🔧 Pegar Mais Próxima",21,function()
-        local n=GrabNearestTool(); gs(n and "✓ Pegou: "..n or "❌ Nenhuma",n and C.green or C.redH)
+    Btn(UtilP,"🔧 Pegar Mais Próxima",19,function()
+        local n=GrabNearestTool(); gs(n and "✓ "..n or "❌ Nenhuma",n and C.green or C.redH)
     end,Color3.fromRGB(20,50,20))
-    Btn(UtilP,"↺ Listar Tools do Mapa",22,RefTools,Color3.fromRGB(12,35,55),C.blueH)
+    Btn(UtilP,"↺ Listar Tools do Mapa",20,RefTools,Color3.fromRGB(12,35,55),C.blueH)
 end
-Sep(UtilP,24); SL(UtilP,"BOOMBOX",25)
+Sep(UtilP,22); SL(UtilP,"BOOMBOX",23)
 do
-    local bbBox=IFld(UtilP,"ID da Música...",26,function(v) Cfg.Misc.BoomboxID=v end)
-    local bsF=Instance.new("Frame",UtilP); bsF.Size=UDim2.new(1,0,0,14); bsF.BackgroundTransparency=1; bsF.LayoutOrder=28
-    local bsL=Instance.new("TextLabel",bsF); bsL.Text="Parado"; bsL.Size=UDim2.new(1,0,1,0); bsL.BackgroundTransparency=1; bsL.TextColor3=C.dim; bsL.Font=FM; bsL.TextSize=10; bsL.TextXAlignment=Enum.TextXAlignment.Left
-    local prf=Instance.new("Frame",UtilP); prf.Size=UDim2.new(1,0,0,28); prf.BackgroundTransparency=1; prf.LayoutOrder=29
-    local pLL=Instance.new("UIListLayout",prf); pLL.FillDirection=Enum.FillDirection.Horizontal; pLL.Padding=UDim.new(0,4)
-    local pBtn=Instance.new("TextButton",prf); pBtn.Text="▶ Tocar"; pBtn.Size=UDim2.new(0.5,-2,1,0); pBtn.BackgroundColor3=Color3.fromRGB(14,52,14); pBtn.TextColor3=C.green; pBtn.Font=FB; pBtn.TextSize=12; pBtn.BorderSizePixel=0; Instance.new("UICorner",pBtn).CornerRadius=UDim.new(0,4)
+    local bbBox=IFld(UtilP,"ID da Música...",24,function(v) Cfg.Misc.BoomboxID=v end)
+    local bsF=Instance.new("Frame",UtilP); bsF.Size=UDim2.new(1,0,0,14); bsF.BackgroundTransparency=1; bsF.LayoutOrder=26; local bsL=Instance.new("TextLabel",bsF); bsL.Text="Parado"; bsL.Size=UDim2.new(1,0,1,0); bsL.BackgroundTransparency=1; bsL.TextColor3=C.dim; bsL.Font=FM; bsL.TextSize=10; bsL.TextXAlignment=Enum.TextXAlignment.Left
+    local prf=Instance.new("Frame",UtilP); prf.Size=UDim2.new(1,0,0,28); prf.BackgroundTransparency=1; prf.LayoutOrder=27; local pLL=Instance.new("UIListLayout",prf); pLL.FillDirection=Enum.FillDirection.Horizontal; pLL.Padding=UDim.new(0,4)
+    local pBtn=Instance.new("TextButton",prf); pBtn.Text="▶"; pBtn.Size=UDim2.new(0.5,-2,1,0); pBtn.BackgroundColor3=Color3.fromRGB(14,52,14); pBtn.TextColor3=C.green; pBtn.Font=FB; pBtn.TextSize=12; pBtn.BorderSizePixel=0; Instance.new("UICorner",pBtn).CornerRadius=UDim.new(0,4)
     local sBtn=Instance.new("TextButton",prf); sBtn.Text="■ Parar"; sBtn.Size=UDim2.new(0.5,-2,1,0); sBtn.BackgroundColor3=Color3.fromRGB(52,10,10); sBtn.TextColor3=C.redH; sBtn.Font=FB; sBtn.TextSize=12; sBtn.BorderSizePixel=0; Instance.new("UICorner",sBtn).CornerRadius=UDim.new(0,4)
-    pBtn.MouseButton1Click:Connect(function() local id=Cfg.Misc.BoomboxID~="" and Cfg.Misc.BoomboxID or bbBox.Text; if id~="" then PlayBoom(id); bsL.Text="▶ "..id; bsL.TextColor3=C.green else bsL.Text="❌ ID inválido"; bsL.TextColor3=C.redH end end)
+    pBtn.MouseButton1Click:Connect(function() local id=Cfg.Misc.BoomboxID~="" and Cfg.Misc.BoomboxID or bbBox.Text; if id~="" then PlayBoom(id); bsL.Text="▶ "..id; bsL.TextColor3=C.green else bsL.Text="❌"; bsL.TextColor3=C.redH end end)
     sBtn.MouseButton1Click:Connect(function() StopBoom(); bsL.Text="Parado"; bsL.TextColor3=C.dim end)
 end
-Sep(UtilP,31); SL(UtilP,"TOOL DUPLICATOR",32)
+Sep(UtilP,29); SL(UtilP,"TOOL DUPLICATOR",30)
 do
-    IFld(UtilP,"Nome da Tool...",33,function(v) Cfg.Misc.DupeToolName=v end)
-    Btn(UtilP,"Duplicar Tool",35,DupeTool)
+    IFld(UtilP,"Nome da Tool...",31,function(v) Cfg.Misc.DupeToolName=v end)
+    Btn(UtilP,"Duplicar Tool",33,DupeTool)
 end
-Sep(UtilP,37); SL(UtilP,"SERVER",38)
-Btn(UtilP,"🔄 Rejoin Server", 39,Rejoin, Color3.fromRGB(10,10,55),C.blueH)
-Btn(UtilP,"🌐 Server Hop",   41,ServerHop, Color3.fromRGB(10,40,10),C.green)
+Sep(UtilP,35); SL(UtilP,"SERVER",36)
+Btn(UtilP,"🔄 Rejoin Server",37,Rejoin, Color3.fromRGB(10,10,55),C.blueH)
+Btn(UtilP,"🌐 Server Hop",   39,ServerHop, Color3.fromRGB(10,40,10),C.green)
 
 -- ============================================================
--- PAGE: TROLL — apenas funções client-side (sem admin)
+-- PAGE: MODOS ESPECIAIS
+-- ============================================================
+local ModP1=Panel(PModes,"Modos de Movimento",0,0,435,468,C.teal)
+local ModP2=Panel(PModes,"Informações",443,0,435,350,C.teal)
+
+SL(ModP1,"MODOS ESPECIAIS",0,C.tealH)
+do local f=Instance.new("Frame",ModP1); f.Size=UDim2.new(1,0,0,26); f.BackgroundTransparency=1; f.LayoutOrder=1; local l=Instance.new("TextLabel",f); l.Text="Ative ou desative os modos abaixo. Apenas um modo por vez é recomendado."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left end
+
+Sep(ModP1,2); SL(ModP1,"🕷️  HOMEM ARANHA",3,C.tealH)
+Toggle(ModP1,"Modo Homem Aranha",4,
+    function() return Cfg.Modes.SpiderMan end,
+    function(v) Cfg.Modes.SpiderMan=v end,nil,C.teal)
+do local f=Instance.new("Frame",ModP1); f.Size=UDim2.new(1,0,0,26); f.BackgroundTransparency=1; f.LayoutOrder=6; local l=Instance.new("TextLabel",f); l.Text="Permite andar sobre paredes e tetos. Use WASD normalmente."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left end
+
+Sep(ModP1,7); SL(ModP1,"🌊  AQUAMAN",8,C.tealH)
+Toggle(ModP1,"Modo Aquaman",9,
+    function() return Cfg.Modes.Aquaman end,
+    function(v) Cfg.Modes.Aquaman=v end,nil,C.teal)
+do local f=Instance.new("Frame",ModP1); f.Size=UDim2.new(1,0,0,26); f.BackgroundTransparency=1; f.LayoutOrder=11; local l=Instance.new("TextLabel",f); l.Text="Impede perda de vida por afogamento. Funciona em água profunda."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left end
+
+Sep(ModP1,12); SL(ModP1,"🪂  ANTIGRAVIDADE / SEM DANO DE QUEDA",13,C.tealH)
+Toggle(ModP1,"Anti Queda (No Fall Damage)",14,
+    function() return Cfg.Modes.NoFallDmg end,
+    function(v) Cfg.Modes.NoFallDmg=v end,nil,C.teal)
+do local f=Instance.new("Frame",ModP1); f.Size=UDim2.new(1,0,0,26); f.BackgroundTransparency=1; f.LayoutOrder=16; local l=Instance.new("TextLabel",f); l.Text="Restaura HP perdido por queda. Funciona em modo client-side."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left end
+
+SL(ModP2,"SOBRE OS MODOS",0,C.tealH)
+do
+    local infos={
+        {"🕷️ Homem Aranha","Cola o personagem em superfícies próximas detectadas por Raycast. Funciona em paredes e tetos."},
+        {"🌊 Aquaman","Impede afogamento regenerando HP continuamente quando submerso. Não requer admin."},
+        {"🪂 Anti Queda","Monitora quedas súbitas de HP e restaura automaticamente. Client-side apenas."},
+        {"⚠️ Nota","Esses modos são client-side. Jogos com anti-cheat servidor podem reverter alguns efeitos."},
+    }
+    local order=1
+    for _,info in ipairs(infos) do
+        SL(ModP2,info[1],order,C.tealH); order=order+1
+        local f=Instance.new("Frame",ModP2); f.Size=UDim2.new(1,0,0,30); f.BackgroundTransparency=1; f.LayoutOrder=order
+        local l=Instance.new("TextLabel",f); l.Text=info[2]; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top
+        order=order+2
+    end
+end
+
+-- ============================================================
+-- PAGE: TROLL
 -- ============================================================
 local Tr1=Panel(PTroll,"Trollagem - Pessoal",   0,  0,435,468,C.purple)
 local Tr2=Panel(PTroll,"Chat / Som / Outros",443,0,435,468,C.purple)
@@ -1569,54 +1591,48 @@ SL(Tr1,"APARÊNCIA PESSOAL",0,C.purpleH)
 Toggle(Tr1,"Spin/Spinbot",  1,function() return Cfg.Misc.SpinBot    end,function(v) Cfg.Misc.SpinBot=v; TrollSpin(v) end,nil,C.purpleH)
 Slider(Tr1,"Spin Speed",1,50,10,3,function(v) Cfg.Troll.SpinSpeed=v; if Cfg.Misc.SpinBot then TrollSpin(true) end end)
 Toggle(Tr1,"Invisible",     6,function() return Cfg.Troll.Invisible  end,function(v) Cfg.Troll.Invisible=v; TrollInvis(v) end,nil,C.purpleH)
-Sep(Tr1,8); SL(Tr1,"TAMANHO DO AVATAR",9,C.purpleH)
+Sep(Tr1,8); SL(Tr1,"TAMANHO",9,C.purpleH)
 Btn(Tr1,"🔷 Giant",10,function() TrollScale(Cfg.Troll.GiantScale) end,Color3.fromRGB(18,38,78),C.blueH)
 Btn(Tr1,"🔸 Tiny", 12,function() TrollScale(Cfg.Troll.TinyScale)  end,Color3.fromRGB(38,18,78),C.purpleH)
 Btn(Tr1,"↺ Normal",14,function() TrollScale(1) end,C.bg4,C.text)
 Slider(Tr1,"Giant Scale",2,20,5,16,function(v) Cfg.Troll.GiantScale=v end)
 Slider(Tr1,"Tiny Scale",1,10,3,18,function(v) Cfg.Troll.TinyScale=v/10 end)
-Sep(Tr1,20); SL(Tr1,"RAINBOW ARMOR",21,C.purpleH)
+Sep(Tr1,20); SL(Tr1,"RAINBOW",21,C.purpleH)
 Toggle(Tr1,"Rainbow Armor",22,function() return Cfg.Troll.Rainbow   end,function(v) Cfg.Troll.Rainbow=v; EnableRainbow(v) end,nil,C.purpleH)
 Slider(Tr1,"Rainbow Speed",1,20,5,24,function(v) Cfg.Troll.RainbowSpeed=v*0.01 end)
-Sep(Tr1,26); SL(Tr1,"NOTA",27,C.dim)
-do local f=Instance.new("Frame",Tr1); f.Size=UDim2.new(1,0,0,40); f.BackgroundTransparency=1; f.LayoutOrder=28; local l=Instance.new("TextLabel",f); l.Text="As funções de trollar outros jogadores (Freeze, Fling, etc.) foram removidas pois requerem admin/executor especial para funcionar."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
 
--- Tr2
 SL(Tr2,"CHAT SPAM",0,C.purpleH)
 IFld(Tr2,"Mensagem do spam...",1,function(v) Cfg.Troll.SpamMsg=v end)
 Slider(Tr2,"Delay (s)",1,30,1,3,function(v) Cfg.Troll.SpamDelay=v end)
 Toggle(Tr2,"Chat Spammer",   5,function() return Cfg.Troll.ChatSpam end,function(v) Cfg.Troll.ChatSpam=v; if v then StartSpam() else StopSpam() end end,nil,C.purpleH)
 Sep(Tr2,7); SL(Tr2,"SOUND SPAM",8,C.purpleH)
-local sndBox=IFld(Tr2,"ID do som (Roblox asset)...",9,function(v) Cfg.Troll.SoundID=v end)
-local sndSF=Instance.new("Frame",Tr2); sndSF.Size=UDim2.new(1,0,0,14); sndSF.BackgroundTransparency=1; sndSF.LayoutOrder=11
-local sndSL=Instance.new("TextLabel",sndSF); sndSL.Text="Parado"; sndSL.Size=UDim2.new(1,0,1,0); sndSL.BackgroundTransparency=1; sndSL.TextColor3=C.dim; sndSL.Font=FM; sndSL.TextSize=10; sndSL.TextXAlignment=Enum.TextXAlignment.Left
-local sndRow=Instance.new("Frame",Tr2); sndRow.Size=UDim2.new(1,0,0,28); sndRow.BackgroundTransparency=1; sndRow.LayoutOrder=12
-local sndLL=Instance.new("UIListLayout",sndRow); sndLL.FillDirection=Enum.FillDirection.Horizontal; sndLL.Padding=UDim.new(0,4)
+local sndBox=IFld(Tr2,"ID do som...",9,function(v) Cfg.Troll.SoundID=v end)
+local sndSF=Instance.new("Frame",Tr2); sndSF.Size=UDim2.new(1,0,0,14); sndSF.BackgroundTransparency=1; sndSF.LayoutOrder=11; local sndSL=Instance.new("TextLabel",sndSF); sndSL.Text="Parado"; sndSL.Size=UDim2.new(1,0,1,0); sndSL.BackgroundTransparency=1; sndSL.TextColor3=C.dim; sndSL.Font=FM; sndSL.TextSize=10; sndSL.TextXAlignment=Enum.TextXAlignment.Left
+local sndRow=Instance.new("Frame",Tr2); sndRow.Size=UDim2.new(1,0,0,28); sndRow.BackgroundTransparency=1; sndRow.LayoutOrder=12; local sndLL=Instance.new("UIListLayout",sndRow); sndLL.FillDirection=Enum.FillDirection.Horizontal; sndLL.Padding=UDim.new(0,4)
 local sPlay=Instance.new("TextButton",sndRow); sPlay.Text="▶ Tocar"; sPlay.Size=UDim2.new(0.5,-2,1,0); sPlay.BackgroundColor3=Color3.fromRGB(38,6,58); sPlay.TextColor3=C.purpleH; sPlay.Font=FB; sPlay.TextSize=12; sPlay.BorderSizePixel=0; Instance.new("UICorner",sPlay).CornerRadius=UDim.new(0,4)
 local sStop=Instance.new("TextButton",sndRow); sStop.Text="■ Parar"; sStop.Size=UDim2.new(0.5,-2,1,0); sStop.BackgroundColor3=Color3.fromRGB(52,10,10); sStop.TextColor3=C.redH; sStop.Font=FB; sStop.TextSize=12; sStop.BorderSizePixel=0; Instance.new("UICorner",sStop).CornerRadius=UDim.new(0,4)
 sPlay.MouseButton1Click:Connect(function()
     local id=Cfg.Troll.SoundID~="" and Cfg.Troll.SoundID or sndBox.Text
-    if id~="" then StartSoundSpam(id); sndSL.Text="▶ "..id; sndSL.TextColor3=C.purpleH else sndSL.Text="❌ ID inválido"; sndSL.TextColor3=C.redH end
+    if id~="" then StartSoundSpam(id); sndSL.Text="▶ "..id; sndSL.TextColor3=C.purpleH else sndSL.Text="❌"; sndSL.TextColor3=C.redH end
 end)
 sStop.MouseButton1Click:Connect(function() StopSoundSpam(); sndSL.Text="Parado"; sndSL.TextColor3=C.dim end)
 
 -- ============================================================
 -- PAGE: SETTINGS
 -- ============================================================
-local KbP  = Panel(PSettings,"Teclas de Atalho",         0,  0,435,468)
-local CfgP = Panel(PSettings,"Configurações & Saves",  443,  0,290,468)
-local LogP = Panel(PSettings,"Chat Log",               737,  0,175,468)
+local KbP   = Panel(PSettings,"Teclas de Atalho",        0,  0,435,468)
+local CfgP  = Panel(PSettings,"Configurações & Saves",  443,  0,290,468)
+local LogP  = Panel(PSettings,"Chat Log",               737,  0,175,468)
 
 KB(KbP,"Toggle GUI",         0,function() return Cfg.Settings.ToggleKeyName  end,function(k,n) Cfg.Settings.ToggleKey=k;  Cfg.Settings.ToggleKeyName=n  end)
 KB(KbP,"ESP On/Off",         2,function() return Cfg.Settings.ESPKeyName     end,function(k,n) Cfg.Settings.ESPKey=k;     Cfg.Settings.ESPKeyName=n     end)
 KB(KbP,"Aimbot On/Off",      4,function() return Cfg.Settings.AimbotKeyName  end,function(k,n) Cfg.Settings.AimbotKey=k;  Cfg.Settings.AimbotKeyName=n  end)
-KB(KbP,"Silent Aim On/Off",  6,function() return Cfg.Settings.SilentKeyName  end,function(k,n) Cfg.Settings.SilentKey=k;  Cfg.Settings.SilentKeyName=n  end)
-KB(KbP,"Fly On/Off",         8,function() return Cfg.Settings.FlyKeyName     end,function(k,n) Cfg.Settings.FlyKey=k;     Cfg.Settings.FlyKeyName=n     end)
-KB(KbP,"Noclip On/Off",     10,function() return Cfg.Settings.NoclipKeyName  end,function(k,n) Cfg.Settings.NoclipKey=k;  Cfg.Settings.NoclipKeyName=n  end)
-KB(KbP,"Speed Hack On/Off", 12,function() return Cfg.Settings.SpeedKeyName   end,function(k,n) Cfg.Settings.SpeedKey=k;   Cfg.Settings.SpeedKeyName=n   end)
-KB(KbP,"Xray On/Off",       14,function() return Cfg.Settings.XrayKeyName    end,function(k,n) Cfg.Settings.XrayKey=k;    Cfg.Settings.XrayKeyName=n    end)
-KB(KbP,"FreeCam On/Off",    16,function() return Cfg.Settings.FreeCamKeyName end,function(k,n) Cfg.Settings.FreeCamKey=k; Cfg.Settings.FreeCamKeyName=n end)
-KB(KbP,"Aim Key (segurar)", 18,function() return Cfg.Aim.AimKeyName          end,function(k,n) Cfg.Aim.AimKey=k;          Cfg.Aim.AimKeyName=n           end)
+KB(KbP,"Fly On/Off",         6,function() return Cfg.Settings.FlyKeyName     end,function(k,n) Cfg.Settings.FlyKey=k;     Cfg.Settings.FlyKeyName=n     end)
+KB(KbP,"Noclip On/Off",      8,function() return Cfg.Settings.NoclipKeyName  end,function(k,n) Cfg.Settings.NoclipKey=k;  Cfg.Settings.NoclipKeyName=n  end)
+KB(KbP,"Speed Hack On/Off", 10,function() return Cfg.Settings.SpeedKeyName   end,function(k,n) Cfg.Settings.SpeedKey=k;   Cfg.Settings.SpeedKeyName=n   end)
+KB(KbP,"Xray On/Off",       12,function() return Cfg.Settings.XrayKeyName    end,function(k,n) Cfg.Settings.XrayKey=k;    Cfg.Settings.XrayKeyName=n    end)
+KB(KbP,"FreeCam On/Off",    14,function() return Cfg.Settings.FreeCamKeyName end,function(k,n) Cfg.Settings.FreeCamKey=k; Cfg.Settings.FreeCamKeyName=n end)
+KB(KbP,"Aim Key (segurar)", 16,function() return Cfg.Aim.AimKeyName          end,function(k,n) Cfg.Aim.AimKey=k;          Cfg.Aim.AimKeyName=n           end)
 
 SL(CfgP,"SAVES",0)
 local svSt=StatusLbl(CfgP,1)
@@ -1644,27 +1660,30 @@ end
 Btn(CfgP,"↺ Atualizar Saves",13,RefSaves); RefSaves()
 Sep(CfgP,15); SL(CfgP,"RESET",16)
 Btn(CfgP,"🗑 Resetar Padrão",17,function()
+    -- Reset completo para false
     for k in pairs({Box=0,Fill=0,Names=0,HP=0,Tracers=0,Dist=0,WallCheck=0,Enabled=0,TeamCheck=0,HeldTool=0}) do Cfg.ESP[k]=false end
     Cfg.ESP.MaxDist=500; Cfg.ESP.TrackList={}
-    Cfg.Xray.Enabled=false; Cfg.Xray.Skeleton=false; Cfg.Xray.TeamCheck=false
-    for k in pairs({Aimbot=0,SilentAim=0,WallCheck=0,TeamCheck=0,Prediction=0,NoRecoil=0,InfAmmo=0,ShowFOV=0,UseFOV=0,FOVFollow=0}) do Cfg.Aim[k]=false end
+    for k in pairs({Box=0,Fill=0,Names=0,HP=0,Tracers=0,Dist=0,TeamCheck=0,Enabled=0,Skeleton=0}) do Cfg.Xray[k]=false end
+    Cfg.Xray.MaxDist=1000
+    for k in pairs({Aimbot=0,WallCheck=0,TeamCheck=0,Prediction=0,NoRecoil=0,InfAmmo=0,FastReload=0,ShowFOV=0,UseFOV=0,FOVFollow=0}) do Cfg.Aim[k]=false end
     Cfg.Aim.AimKey=Enum.KeyCode.E; Cfg.Aim.AimKeyName="E"; Cfg.Aim.Blacklist={}; Cfg.Aim.FOV=120
     Cfg.Trigger.Enabled=false; Cfg.Trigger.TeamCheck=false; Cfg.Trigger.Delay=100
     for k in pairs({Fly=0,FlyBoost=0,Noclip=0,Speed=0,AntiAFK=0,HitboxExtender=0,JumpMod=0,InfJump=0,AntiRag=0,FreeCam=0,ClickTp=0,SpinBot=0}) do Cfg.Misc[k]=false end
+    for k in pairs({SpiderMan=0,Aquaman=0,NoFallDmg=0}) do Cfg.Modes[k]=false end
     svSt("✓ Resetado",C.orange)
 end,Color3.fromRGB(46,10,4))
 Sep(CfgP,19); SL(CfgP,"CRÉDITOS",20)
 IL(CfgP,"SCRIPT POR BRUNO223J AND TY",21,C.gold)
 IL(CfgP,"DISCORD: .223j  |  frty2017",22,C.gold)
-IL(CfgP,"HUB REVOLUCIONARI'US GROUP  v9.0",23,C.wht)
+IL(CfgP,"HUB REVOLUCIONARI'US GROUP  v1.0",23,C.wht)
 IL(CfgP,"Toggle: [;] · Arrastável pela topbar",24,C.dim)
 Sep(CfgP,25); SL(CfgP,"REMOVER SCRIPT",26,C.red)
 Btn(CfgP,"🗑 Desligar & Remover Tudo",27,function()
-    Cfg.Aim.Aimbot=false; Cfg.Aim.SilentAim=false; Cfg.ESP.Enabled=false; Cfg.Xray.Enabled=false
+    Cfg.Aim.Aimbot=false; Cfg.ESP.Enabled=false; Cfg.Xray.Enabled=false
     Cfg.Misc.Fly=false; Cfg.Misc.Noclip=false; Cfg.Misc.Speed=false; Cfg.Misc.FreeCam=false
     Cfg.Troll.ChatSpam=false; Cfg.Troll.Rainbow=false; Cfg.Misc.SpinBot=false
-    DisableFly(); DisableNoclip(); DisableFreeCam()
-    StopBoom(); StopSoundSpam()
+    Cfg.Modes.SpiderMan=false; Cfg.Modes.Aquaman=false; Cfg.Modes.NoFallDmg=false
+    DisableFly(); DisableNoclip(); DisableFreeCam(); StopBoom(); StopSoundSpam()
     if _spinBG then pcall(function() _spinBG:Destroy() end) end
     for p,_ in pairs(ESPO) do KillESP(p) end
     pcall(function() FOVC:Remove() end)
@@ -1673,7 +1692,7 @@ Btn(CfgP,"🗑 Desligar & Remover Tudo",27,function()
         if h then h.WalkSpeed=16; h.JumpPower=50; h.PlatformStand=false end
     end
     task.wait(0.1); if SG and SG.Parent then SG:Destroy() end
-    print("[223HUB v9.0] Script removido.")
+    print("[223HUB v1.0] Removido.")
 end,Color3.fromRGB(80,8,8),C.redH)
 
 -- Chat Log
@@ -1694,4 +1713,4 @@ end
 Btn(LogP,"↺ Atualizar",2,RefLog,C.bg4,C.gold); RefLog()
 task.spawn(function() while true do task.wait(5); if _curTab=="Settings" then pcall(RefLog) end end end)
 
-print("[223HUB v9.0] ✓ LOADED | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
+print("[223HUB v1.0] ✓ LOADED | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
