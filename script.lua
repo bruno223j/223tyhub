@@ -11,7 +11,6 @@
 -- Formato: 223-D-CODIGO / 223-S-CODIGO / 223-M-CODIGO / 223-P-CODIGO
 -- ============================================================
 
--- Serviços usados pelo sistema de key
 local _KCoreGui = game:GetService("CoreGui")
 local _KTween   = game:GetService("TweenService")
 local _KHttp    = game:GetService("HttpService")
@@ -21,11 +20,11 @@ local _KLP      = game:GetService("Players").LocalPlayer
 local KEY_URL       = "https://pastebin.com/raw/zLBi64DJ"
 local KEY_SAVE_FILE = "223HUB_keydata.json"
 
+-- Keys pessoais hardcoded (funcionam sem internet)
 local VALID_KEYS_RAW = {
     "223-P-BRUNO223",
     "223-P-TY2025",
 }
-
 
 -- Durações por tipo (segundos)
 local KEY_DURATION = { D=86400, S=604800, M=2592000, P=math.huge }
@@ -37,48 +36,120 @@ local function GetKeyType(k)
     return k and NormalizeKey(k):match("^223%-([DSMP])%-") or nil
 end
 
-local function LoadKeyData()
-    if not isfile or not readfile then return nil end
-    local ok, ex = pcall(isfile, KEY_SAVE_FILE); if not ok or not ex then return nil end
-    local ok2, raw = pcall(readfile, KEY_SAVE_FILE); if not ok2 or not raw or raw=="" then return nil end
-    local ok3, data = pcall(function() return _KHttp:JSONDecode(raw) end)
-    return ok3 and data or nil
-end
-
+-- Salva no disco — CORRIGIDO: salva TODOS os tipos incluindo Permanente
 local function SaveKeyData(key, activatedAt)
     if not writefile then return end
-    local ok, raw = pcall(function() return _KHttp:JSONEncode({key=key, activated_at=activatedAt}) end)
+    local data = { key=key, activated_at=activatedAt or os.time() }
+    local ok, raw = pcall(function() return _KHttp:JSONEncode(data) end)
     if ok then pcall(writefile, KEY_SAVE_FILE, raw) end
+end
+
+local function LoadKeyData()
+    if not isfile or not readfile then return nil end
+    local ok, ex = pcall(isfile, KEY_SAVE_FILE)
+    if not ok or not ex then return nil end
+    local ok2, raw = pcall(readfile, KEY_SAVE_FILE)
+    if not ok2 or not raw or raw=="" then return nil end
+    local ok3, data = pcall(function() return _KHttp:JSONDecode(raw) end)
+    return ok3 and data or nil
 end
 
 local function ClearKeyData()
     if delfile then pcall(delfile, KEY_SAVE_FILE) end
 end
 
+-- Busca keys do Pastebin com fallback para múltiplos métodos HTTP
+-- CORRIGIDO: tenta 3 métodos diferentes de HTTP para máxima compatibilidade
+local _cachedRemoteKeys = nil
+local function FetchRemoteKeys()
+    -- Usa cache para não buscar múltiplas vezes na mesma sessão
+    if _cachedRemoteKeys then return _cachedRemoteKeys end
+    _cachedRemoteKeys = {}
+
+    local response = nil
+
+    -- Método 1: game:HttpGet (mais comum)
+    if not response then
+        local ok, res = pcall(function() return game:HttpGet(KEY_URL, true) end)
+        if ok and res and #res > 3 then response = res end
+    end
+
+    -- Método 2: syn.request (Synapse X)
+    if not response then
+        local ok, res = pcall(function()
+            local r = syn.request({Url=KEY_URL, Method="GET"})
+            return r and r.Body
+        end)
+        if ok and res and #res > 3 then response = res end
+    end
+
+    -- Método 3: http_request (KRNL e outros)
+    if not response then
+        local ok, res = pcall(function()
+            local r = http_request({Url=KEY_URL, Method="GET"})
+            return r and r.Body
+        end)
+        if ok and res and #res > 3 then response = res end
+    end
+
+    -- Método 4: request (genérico)
+    if not response then
+        local ok, res = pcall(function()
+            local r = request({Url=KEY_URL, Method="GET"})
+            return r and r.Body
+        end)
+        if ok and res and #res > 3 then response = res end
+    end
+
+    if response then
+        for line in response:gmatch("[^\n\r]+") do
+            local trimmed = NormalizeKey(line)
+            if trimmed ~= "" then
+                _cachedRemoteKeys[trimmed] = true
+            end
+        end
+    end
+
+    return _cachedRemoteKeys
+end
+
 local function KeyExists(key)
     key = NormalizeKey(key)
-    for _, k in ipairs(VALID_KEYS_RAW) do if NormalizeKey(k)==key then return true end end
-    local ok, resp = pcall(function() return game:HttpGet(KEY_URL, true) end)
-    if ok and resp then
-        for line in resp:gmatch("[^\n\r]+") do if NormalizeKey(line)==key then return true end end
+    if key == "" then return false end
+
+    -- 1. Verifica hardcoded
+    for _, k in ipairs(VALID_KEYS_RAW) do
+        if NormalizeKey(k) == key then return true end
     end
+
+    -- 2. Verifica remoto (com cache)
+    local remoteKeys = FetchRemoteKeys()
+    if remoteKeys[key] then return true end
+
     return false
 end
 
--- Retorna: valid(bool), message(string), keyType(string), activatedAt(number)
 local function CheckKey(key, savedActivatedAt)
     key = NormalizeKey(key)
     if key=="" then return false,"Digite uma key.",nil,nil end
     local ktype = GetKeyType(key)
     if not ktype then return false,"Formato inválido. Use: 223-D/S/M/P-CODIGO",nil,nil end
     if not KeyExists(key) then return false,"Key não encontrada.",nil,nil end
-    if KEY_DURATION[ktype]==math.huge then return true,"Acesso Permanente ✓",ktype,nil end
+
+    -- Permanente: nunca expira
+    if KEY_DURATION[ktype] == math.huge then
+        return true, "Acesso Permanente ✓", ktype, os.time()
+    end
+
+    -- Temporária: verifica expiração
     local activatedAt = savedActivatedAt or os.time()
     local expiresAt   = activatedAt + KEY_DURATION[ktype]
     local now         = os.time()
+
     if now > expiresAt then
         return false, "Key "..KEY_LABEL[ktype].." expirada. Adquira uma nova.", ktype, nil
     end
+
     local rem = expiresAt - now
     local timeStr
     if rem >= 86400 then
@@ -88,6 +159,7 @@ local function CheckKey(key, savedActivatedAt)
     else
         timeStr = math.floor(rem/60).."m restantes"
     end
+
     return true, KEY_LABEL[ktype].." · "..timeStr, ktype, activatedAt
 end
 
@@ -98,53 +170,45 @@ local KSG = Instance.new("ScreenGui")
 KSG.Name="223HUB_Key"; KSG.ResetOnSpawn=false; KSG.IgnoreGuiInset=true
 KSG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; KSG.Parent=_KCoreGui
 
--- Fundo preto
 local KBG = Instance.new("Frame",KSG)
 KBG.Size=UDim2.new(1,0,1,0); KBG.BackgroundColor3=Color3.fromRGB(4,4,6); KBG.BorderSizePixel=0
 
--- Linhas decorativas
 for i=1,8 do
     local ln=Instance.new("Frame",KBG)
     ln.Size=UDim2.new(1,0,0,1); ln.Position=UDim2.new(0,0,i/9,0)
     ln.BackgroundColor3=Color3.fromRGB(165,20,20); ln.BackgroundTransparency=0.88; ln.BorderSizePixel=0
 end
 
--- Card
 local KC = Instance.new("Frame",KBG)
 KC.Size=UDim2.new(0,480,0,400); KC.Position=UDim2.new(0.5,-240,0.5,-200)
 KC.BackgroundColor3=Color3.fromRGB(10,10,14); KC.BorderSizePixel=0
 Instance.new("UICorner",KC).CornerRadius=UDim.new(0,10)
 local KCStroke=Instance.new("UIStroke",KC); KCStroke.Color=Color3.fromRGB(165,20,20); KCStroke.Thickness=1.5
 
--- Topbar
 local KTop=Instance.new("Frame",KC); KTop.Size=UDim2.new(1,0,0,50); KTop.BackgroundColor3=Color3.fromRGB(14,4,4); KTop.BorderSizePixel=0
 Instance.new("UICorner",KTop).CornerRadius=UDim.new(0,10)
 local KTopFix=Instance.new("Frame",KTop); KTopFix.Size=UDim2.new(1,0,0.5,0); KTopFix.Position=UDim2.new(0,0,0.5,0); KTopFix.BackgroundColor3=Color3.fromRGB(14,4,4); KTopFix.BorderSizePixel=0
 local KTopDiv=Instance.new("Frame",KC); KTopDiv.Size=UDim2.new(1,0,0,1); KTopDiv.Position=UDim2.new(0,0,0,50); KTopDiv.BackgroundColor3=Color3.fromRGB(165,20,20); KTopDiv.BorderSizePixel=0
 
-local function KL(parent,text,sz,col,y,font,xalign)
-    local l=Instance.new("TextLabel",parent)
-    l.Text=text; l.Size=UDim2.new(1,-40,0,sz+4); l.Position=UDim2.new(0,20,0,y)
-    l.BackgroundTransparency=1; l.TextColor3=col; l.Font=font or Enum.Font.Gotham
-    l.TextSize=sz; l.TextXAlignment=xalign or Enum.TextXAlignment.Center; l.TextWrapped=true
-    return l
-end
-
--- Logo
 local KLogo=Instance.new("TextLabel",KTop); KLogo.Text="◈  223HUB"
 KLogo.Size=UDim2.new(1,0,1,0); KLogo.BackgroundTransparency=1; KLogo.TextColor3=Color3.fromRGB(255,255,255)
 KLogo.Font=Enum.Font.GothamBold; KLogo.TextSize=20; KLogo.TextXAlignment=Enum.TextXAlignment.Center
 
--- Ícone + títulos
+local function KL(parent,text,sz,col,y,font)
+    local l=Instance.new("TextLabel",parent)
+    l.Text=text; l.Size=UDim2.new(1,-40,0,sz+6); l.Position=UDim2.new(0,20,0,y)
+    l.BackgroundTransparency=1; l.TextColor3=col; l.Font=font or Enum.Font.Gotham
+    l.TextSize=sz; l.TextXAlignment=Enum.TextXAlignment.Center; l.TextWrapped=true
+    return l
+end
+
 KL(KC,"🔐",38,Color3.fromRGB(255,255,255),60,Enum.Font.GothamBold)
 KL(KC,"VERIFICAÇÃO DE ACESSO",13,Color3.fromRGB(165,20,20),108,Enum.Font.GothamBold)
 KL(KC,"Insira sua key para acessar o 223HUB v11",11,Color3.fromRGB(75,75,90),128)
 
--- Badges de tipo
 local KBadgeRow=Instance.new("Frame",KC); KBadgeRow.Size=UDim2.new(1,-40,0,26); KBadgeRow.Position=UDim2.new(0,20,0,152); KBadgeRow.BackgroundTransparency=1
 local KBL=Instance.new("UIListLayout",KBadgeRow); KBL.FillDirection=Enum.FillDirection.Horizontal; KBL.HorizontalAlignment=Enum.HorizontalAlignment.Center; KBL.Padding=UDim.new(0,6)
-local BADGE_INFO={{label="DIÁRIA",col=Color3.fromRGB(200,130,20)},{label="SEMANAL",col=Color3.fromRGB(50,140,210)},{label="MENSAL",col=Color3.fromRGB(115,28,195)},{label="PERMANENTE",col=Color3.fromRGB(30,160,70)}}
-for _,b in ipairs(BADGE_INFO) do
+for _,b in ipairs({{label="DIÁRIA",col=Color3.fromRGB(200,130,20)},{label="SEMANAL",col=Color3.fromRGB(50,140,210)},{label="MENSAL",col=Color3.fromRGB(115,28,195)},{label="PERMANENTE",col=Color3.fromRGB(30,160,70)}}) do
     local bdg=Instance.new("TextLabel",KBadgeRow); bdg.Text=b.label; bdg.Size=UDim2.new(0,0,1,0); bdg.AutomaticSize=Enum.AutomaticSize.X
     bdg.BackgroundColor3=b.col; bdg.BackgroundTransparency=0.7; bdg.TextColor3=b.col
     bdg.Font=Enum.Font.GothamBold; bdg.TextSize=9; bdg.BorderSizePixel=0
@@ -152,37 +216,39 @@ for _,b in ipairs(BADGE_INFO) do
     local pad=Instance.new("UIPadding",bdg); pad.PaddingLeft=UDim.new(0,6); pad.PaddingRight=UDim.new(0,6)
 end
 
--- Input
 local KInputWrap=Instance.new("Frame",KC); KInputWrap.Size=UDim2.new(1,-40,0,44); KInputWrap.Position=UDim2.new(0,20,0,188); KInputWrap.BackgroundColor3=Color3.fromRGB(16,16,20); KInputWrap.BorderSizePixel=0
 Instance.new("UICorner",KInputWrap).CornerRadius=UDim.new(0,6)
 local KIS=Instance.new("UIStroke",KInputWrap); KIS.Color=Color3.fromRGB(38,38,48); KIS.Thickness=1
 
 local KInput=Instance.new("TextBox",KInputWrap); KInput.Size=UDim2.new(1,-50,1,0); KInput.Position=UDim2.new(0,10,0,0)
-KInput.BackgroundTransparency=1; KInput.PlaceholderText="Ex: 223-P-CODIGO"; KInput.PlaceholderColor3=Color3.fromRGB(50,50,65)
-KInput.Text=""; KInput.TextColor3=Color3.fromRGB(210,210,215); KInput.Font=Enum.Font.Code; KInput.TextSize=13; KInput.ClearTextOnFocus=false
+KInput.BackgroundTransparency=1; KInput.PlaceholderText="Ex: 223-P-CODIGO ou 223-D-CODIGO"
+KInput.PlaceholderColor3=Color3.fromRGB(50,50,65); KInput.Text=""
+KInput.TextColor3=Color3.fromRGB(210,210,215); KInput.Font=Enum.Font.Code; KInput.TextSize=13; KInput.ClearTextOnFocus=false
 
 local KClearBtn=Instance.new("TextButton",KInputWrap); KClearBtn.Size=UDim2.new(0,34,0,32); KClearBtn.Position=UDim2.new(1,-38,0,6)
-KClearBtn.BackgroundColor3=Color3.fromRGB(26,26,32); KClearBtn.TextColor3=Color3.fromRGB(90,90,105); KClearBtn.Font=Enum.Font.GothamBold; KClearBtn.TextSize=12; KClearBtn.Text="✕"; KClearBtn.BorderSizePixel=0
+KClearBtn.BackgroundColor3=Color3.fromRGB(26,26,32); KClearBtn.TextColor3=Color3.fromRGB(90,90,105)
+KClearBtn.Font=Enum.Font.GothamBold; KClearBtn.TextSize=12; KClearBtn.Text="✕"; KClearBtn.BorderSizePixel=0
 Instance.new("UICorner",KClearBtn).CornerRadius=UDim.new(0,4)
 KClearBtn.MouseButton1Click:Connect(function() KInput.Text="" end)
 
--- Status
-local KStatus=Instance.new("TextLabel",KC); KStatus.Size=UDim2.new(1,-40,0,34); KStatus.Position=UDim2.new(0,20,0,238); KStatus.BackgroundTransparency=1
-KStatus.Text=""; KStatus.TextColor3=Color3.fromRGB(210,45,45); KStatus.Font=Enum.Font.Gotham; KStatus.TextSize=11; KStatus.TextXAlignment=Enum.TextXAlignment.Center; KStatus.TextWrapped=true
+local KStatus=Instance.new("TextLabel",KC); KStatus.Size=UDim2.new(1,-40,0,36); KStatus.Position=UDim2.new(0,20,0,238)
+KStatus.BackgroundTransparency=1; KStatus.Text=""; KStatus.TextColor3=Color3.fromRGB(210,45,45)
+KStatus.Font=Enum.Font.Gotham; KStatus.TextSize=11; KStatus.TextXAlignment=Enum.TextXAlignment.Center; KStatus.TextWrapped=true
 
--- Botão verificar
-local KBtn=Instance.new("TextButton",KC); KBtn.Size=UDim2.new(1,-40,0,44); KBtn.Position=UDim2.new(0,20,0,278)
-KBtn.BackgroundColor3=Color3.fromRGB(165,20,20); KBtn.TextColor3=Color3.fromRGB(255,255,255); KBtn.Font=Enum.Font.GothamBold; KBtn.TextSize=14; KBtn.Text="VERIFICAR KEY"; KBtn.BorderSizePixel=0
+local KBtn=Instance.new("TextButton",KC); KBtn.Size=UDim2.new(1,-40,0,44); KBtn.Position=UDim2.new(0,20,0,280)
+KBtn.BackgroundColor3=Color3.fromRGB(165,20,20); KBtn.TextColor3=Color3.fromRGB(255,255,255)
+KBtn.Font=Enum.Font.GothamBold; KBtn.TextSize=14; KBtn.Text="VERIFICAR KEY"; KBtn.BorderSizePixel=0
 Instance.new("UICorner",KBtn).CornerRadius=UDim.new(0,6)
 KBtn.MouseEnter:Connect(function() _KTween:Create(KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(210,45,45)}):Play() end)
 KBtn.MouseLeave:Connect(function() _KTween:Create(KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(165,20,20)}):Play() end)
 
--- Info salva + rodapé
-local KSavedInfo=Instance.new("TextLabel",KC); KSavedInfo.Size=UDim2.new(1,-40,0,16); KSavedInfo.Position=UDim2.new(0,20,0,328); KSavedInfo.BackgroundTransparency=1
-KSavedInfo.Text=""; KSavedInfo.TextColor3=Color3.fromRGB(30,160,70); KSavedInfo.Font=Enum.Font.Gotham; KSavedInfo.TextSize=10; KSavedInfo.TextXAlignment=Enum.TextXAlignment.Center
+local KSavedInfo=Instance.new("TextLabel",KC); KSavedInfo.Size=UDim2.new(1,-40,0,16); KSavedInfo.Position=UDim2.new(0,20,0,330)
+KSavedInfo.BackgroundTransparency=1; KSavedInfo.Text=""; KSavedInfo.TextColor3=Color3.fromRGB(30,160,70)
+KSavedInfo.Font=Enum.Font.Gotham; KSavedInfo.TextSize=10; KSavedInfo.TextXAlignment=Enum.TextXAlignment.Center
 
-local KFooter=Instance.new("TextLabel",KC); KFooter.Size=UDim2.new(1,-40,0,14); KFooter.Position=UDim2.new(0,20,0,348)
-KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP"; KFooter.TextColor3=Color3.fromRGB(40,40,52); KFooter.Font=Enum.Font.Gotham; KFooter.TextSize=9; KFooter.TextXAlignment=Enum.TextXAlignment.Center
+local KFooter=Instance.new("TextLabel",KC); KFooter.Size=UDim2.new(1,-40,0,14); KFooter.Position=UDim2.new(0,20,0,350)
+KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP"
+KFooter.TextColor3=Color3.fromRGB(40,40,52); KFooter.Font=Enum.Font.Gotham; KFooter.TextSize=9; KFooter.TextXAlignment=Enum.TextXAlignment.Center
 
 -- Animação de entrada
 KC.BackgroundTransparency=1; KC.Position=UDim2.new(0.5,-240,0.58,-200)
@@ -204,20 +270,16 @@ local function SetStatus(msg,col)
 end
 
 local function ShakeCard()
-    local ox=0.5; local oy=0.5
-    local seq={{-6,0.04},{6,0.04},{-4,0.04},{4,0.04},{-2,0.04},{0,0.04}}
+    local moves={{-6,0.04},{6,0.04},{-4,0.04},{4,0.04},{-2,0.04},{0,0.04}}
     local function step(i)
-        if i>#seq then return end
-        _KTween:Create(KC,TweenInfo.new(seq[i][2]),{Position=UDim2.new(ox,-240+seq[i][1],oy,-200)}):Play()
-        task.delay(seq[i][2]+0.01,function() step(i+1) end)
+        if i>#moves then return end
+        _KTween:Create(KC,TweenInfo.new(moves[i][2]),{Position=UDim2.new(0.5,-240+moves[i][1],0.5,-200)}):Play()
+        task.delay(moves[i][2]+0.01,function() step(i+1) end)
     end
     step(1)
 end
 
--- CORREÇÃO PRINCIPAL: em vez de repeat..until (bloqueia render),
--- usamos um callback que só executa o hub quando aprovado
 local function OnKeyApproved()
-    -- Fecha a GUI de key com animação
     _KTween:Create(KBG,TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
     _KTween:Create(KC, TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
     for _,v in ipairs(KC:GetDescendants()) do
@@ -227,7 +289,6 @@ local function OnKeyApproved()
     end
     task.delay(0.55,function()
         if KSG and KSG.Parent then KSG:Destroy() end
-        -- Inicia o hub principal em nova thread
         task.spawn(_223HUB_MAIN)
     end)
 end
@@ -237,24 +298,21 @@ local function TryKey(key, savedActivatedAt)
     if normKey=="" then SetStatus("❌ Digite uma key antes de verificar."); return end
 
     KBtn.Text="⏳ Verificando..."; KBtn.Active=false
-    KIS.Color=Color3.fromRGB(38,38,48); SetStatus("",Color3.fromRGB(80,80,95))
+    KIS.Color=Color3.fromRGB(38,38,48)
+    SetStatus("Buscando no servidor...", Color3.fromRGB(90,90,105))
 
-    -- Roda em task.spawn para não bloquear a GUI
     task.spawn(function()
         local ok, msg, ktype, activatedAt = CheckKey(normKey, savedActivatedAt)
         KBtn.Active=true; KBtn.Text="VERIFICAR KEY"
 
         if ok then
-            -- Sucesso visual
             KCStroke.Color=Color3.fromRGB(30,160,70)
             KBtn.BackgroundColor3=Color3.fromRGB(25,130,55)
             KBtn.Text="✓  ACESSO CONCEDIDO"
             SetStatus("✓ "..msg, Color3.fromRGB(30,160,70))
-            KSavedInfo.Text="✓ Key salva localmente"
-            -- Salva no disco
-            local saveTime = activatedAt or savedActivatedAt or os.time()
-            if ktype ~= "P" then SaveKeyData(normKey, saveTime) end
-            -- Abre o hub após 0.8s
+            -- CORRIGIDO: salva TODOS os tipos (incluindo Permanente)
+            SaveKeyData(normKey, activatedAt or os.time())
+            KSavedInfo.Text="✓ Key salva — login automático na próxima vez"
             task.delay(0.8, OnKeyApproved)
         else
             if msg:find("expirada") then ClearKeyData() end
@@ -268,18 +326,25 @@ end
 KBtn.MouseButton1Click:Connect(function() TryKey(KInput.Text, nil) end)
 KInput.FocusLost:Connect(function(enter) if enter then TryKey(KInput.Text, nil) end end)
 
--- Verifica key salva automaticamente
-local _savedData = LoadKeyData()
-if _savedData and _savedData.key and _savedData.key~="" then
-    KInput.Text = _savedData.key
-    local ktype = GetKeyType(_savedData.key)
-    KSavedInfo.Text = "🔒 Key "..(KEY_LABEL[ktype] or "?").." salva, verificando..."
-    task.delay(0.7, function() TryKey(_savedData.key, _savedData.activated_at) end)
-end
+-- AUTO-LOGIN: carrega key salva e verifica automaticamente
+-- CORRIGIDO: aguarda a GUI estar visível antes de tentar auto-login
+task.delay(0.5, function()
+    local _savedData = LoadKeyData()
+    if _savedData and _savedData.key and _savedData.key~="" then
+        local ktype  = GetKeyType(_savedData.key)
+        local klabel = (ktype and KEY_LABEL[ktype]) or "?"
+        KInput.Text  = _savedData.key
+        KSavedInfo.Text = "🔒 Key "..klabel.." salva encontrada, verificando..."
+        SetStatus("Verificando key salva...", Color3.fromRGB(90,90,105))
+        -- Delay extra para garantir que a GUI está totalmente visível
+        task.delay(0.4, function()
+            TryKey(_savedData.key, _savedData.activated_at)
+        end)
+    end
+end)
 
 -- ============================================================
--- HUB PRINCIPAL — só roda depois da key ser aprovada
--- Toda a lógica do 223HUB fica dentro desta função
+-- HUB PRINCIPAL — só executa após key aprovada
 -- ============================================================
 function _223HUB_MAIN()
 
