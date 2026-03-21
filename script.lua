@@ -1,3 +1,4 @@
+
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║                   223HUB  v11.0                         ║
 -- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
@@ -259,7 +260,7 @@ _KTween:Create(KC,TweenInfo.new(0.4,Enum.EasingStyle.Quart,Enum.EasingDirection.
 task.delay(0.2,function()
     for _,v in ipairs(KC:GetDescendants()) do
         if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
-            _KTween:Create(v,TweenInfo.new(0.3),{TextTransparency=0}):Play()
+            _KTween:Create(v,TweenInfo.new(0.3),{TextTransparency=0.5}):Play()
         end
     end
 end)
