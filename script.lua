@@ -719,31 +719,31 @@ local function MakeESP(p)
     local d={}
 
     -- ESP (com wallcheck)
-    d.Box    = ND("Square",{Filled=false, Color=Cfg.ESP.BoxColor,    Transparency=0,    Thickness=1.5, Visible=false})
+    d.Box    = ND("Square",{Filled=false, Color=Cfg.ESP.BoxColor,    Transparency=0.7,  Thickness=1.5, Visible=false})
     d.Fill   = ND("Square",{Filled=true,  Color=Cfg.ESP.FillColor,   Transparency=0.7,  Thickness=0,   Visible=false})
     d.Name   = ND("Text",  {Size=14, Color=Cfg.ESP.NameColor,  Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
     d.Dist   = ND("Text",  {Size=12, Color=Cfg.ESP.DistColor,  Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
     -- Health bar: fundo + preenchimento + texto
-    d.HPBg   = ND("Square",{Filled=true,  Color=Cfg.ESP.HPBgColor,   Transparency=0,    Thickness=0,   Visible=false})
-    d.HPBar  = ND("Square",{Filled=true,  Color=Color3.fromRGB(0,220,80), Transparency=0, Thickness=0,  Visible=false})
+    d.HPBg   = ND("Square",{Filled=true,  Color=Cfg.ESP.HPBgColor,   Transparency=0.7,  Thickness=0,   Visible=false})
+    d.HPBar  = ND("Square",{Filled=true,  Color=Color3.fromRGB(0,220,80), Transparency=0.7, Thickness=0,  Visible=false})
     -- Tracer
-    d.Tracer = ND("Line",  {Thickness=1.5, Color=Cfg.ESP.TracerColor, Transparency=0,   Visible=false})
+    d.Tracer = ND("Line",  {Thickness=1.5, Color=Cfg.ESP.TracerColor, Transparency=0.7,  Visible=false})
     -- Tool
     d.Tool   = ND("Text",  {Size=12, Color=Cfg.ESP.ToolColor,  Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
 
     -- Xray (sem wallcheck)
-    d.XBox   = ND("Square",{Filled=false, Color=Cfg.Xray.BoxColor,   Transparency=0,    Thickness=1.5, Visible=false})
+    d.XBox   = ND("Square",{Filled=false, Color=Cfg.Xray.BoxColor,   Transparency=0.7,  Thickness=1.5, Visible=false})
     d.XFill  = ND("Square",{Filled=true,  Color=Cfg.Xray.FillColor,  Transparency=0.7,  Thickness=0,   Visible=false})
     d.XName  = ND("Text",  {Size=14, Color=Cfg.Xray.NameColor, Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
     d.XDist  = ND("Text",  {Size=12, Color=Cfg.Xray.DistColor, Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
-    d.XHPBg  = ND("Square",{Filled=true,  Color=Cfg.Xray.HPBgColor,  Transparency=0,    Thickness=0,   Visible=false})
-    d.XHPBar = ND("Square",{Filled=true,  Color=Cfg.Xray.HPColor,    Transparency=0,    Thickness=0,   Visible=false})
-    d.XTracer= ND("Line",  {Thickness=1.5, Color=Cfg.Xray.TracerColor,Transparency=0,   Visible=false})
+    d.XHPBg  = ND("Square",{Filled=true,  Color=Cfg.Xray.HPBgColor,  Transparency=0.7,  Thickness=0,   Visible=false})
+    d.XHPBar = ND("Square",{Filled=true,  Color=Cfg.Xray.HPColor,    Transparency=0.7,  Thickness=0,   Visible=false})
+    d.XTracer= ND("Line",  {Thickness=1.5, Color=Cfg.Xray.TracerColor,Transparency=0.7, Visible=false})
 
     -- Skeleton: MAX_BONES lines, todas hidden por padrão
     d.Skel={}
     for i=1,MAX_BONES do
-        d.Skel[i] = ND("Line",{Thickness=1.2, Color=Cfg.Xray.SkelColor, Transparency=0, Visible=false})
+        d.Skel[i] = ND("Line",{Thickness=1.2, Color=Cfg.Xray.SkelColor, Transparency=0.7, Visible=false})
     end
 
     ESPO[p] = d
@@ -786,7 +786,7 @@ end
 local FOV_SEGS = 48
 local _fovLines = {}
 for i=1,FOV_SEGS do
-    local ln = ND("Line",{Thickness=1.5, Color=Color3.fromRGB(220,50,50), Transparency=0, Visible=false})
+    local ln = ND("Line",{Thickness=1.5, Color=Color3.fromRGB(220,50,50), Transparency=0.7, Visible=false})
     _fovLines[i] = ln
 end
 
@@ -812,6 +812,7 @@ local function UpdateFOVCircle()
         pcall(function()
             ln.From    = Vector2.new(x1,y1)
             ln.To      = Vector2.new(x2,y2)
+            ln.Transparency = 0.7
             ln.Visible = show
         end)
     end
@@ -1373,44 +1374,46 @@ AC(RunService.RenderStepped:Connect(function()
             -- Box: canto superior esquerdo + tamanho
             if Cfg.ESP.Box and d.Box then
                 SafeSet(d.Box,{
-                    Position = Vector2.new(x, y),
-                    Size     = Vector2.new(w, h),
-                    Color    = Cfg.ESP.BoxColor,
-                    Visible  = true,
+                    Position     = Vector2.new(x, y),
+                    Size         = Vector2.new(w, h),
+                    Color        = Cfg.ESP.BoxColor,
+                    Transparency = 0.7,
+                    Visible      = true,
                 })
             else SafeHide(d.Box) end
 
             -- Fill
             if Cfg.ESP.Fill and d.Fill then
                 SafeSet(d.Fill,{
-                    Position = Vector2.new(x, y),
-                    Size     = Vector2.new(w, h),
-                    Color    = Cfg.ESP.FillColor,
-                    Visible  = true,
+                    Position     = Vector2.new(x, y),
+                    Size         = Vector2.new(w, h),
+                    Color        = Cfg.ESP.FillColor,
+                    Transparency = 0.7,
+                    Visible      = true,
                 })
             else SafeHide(d.Fill) end
 
-            -- Name
+            -- Name (acima do box)
             if Cfg.ESP.Names and d.Name then
                 SafeSet(d.Name,{
-                    Position = Vector2.new(x+w/2, y-18),
-                    Text     = player.DisplayName.." ["..math.floor(dist).."m]",
-                    Color    = Cfg.ESP.NameColor,
-                    Visible  = true,
+                    Position     = Vector2.new(x+w/2, y-18),
+                    Text         = player.DisplayName,
+                    Color        = Cfg.ESP.NameColor,
+                    Transparency = 0,
+                    Visible      = true,
                 })
-                SafeHide(d.Dist) -- evita duplicar dist se name já tem
-            else
-                SafeHide(d.Name)
-                -- Distance separado (só se Names desligado)
-                if Cfg.ESP.Dist and d.Dist then
-                    SafeSet(d.Dist,{
-                        Position = Vector2.new(x+w/2, y+h+4),
-                        Text     = math.floor(dist).."m",
-                        Color    = Cfg.ESP.DistColor,
-                        Visible  = true,
-                    })
-                else SafeHide(d.Dist) end
-            end
+            else SafeHide(d.Name) end
+
+            -- Distance (abaixo do box) — independente do Name
+            if Cfg.ESP.Dist and d.Dist then
+                SafeSet(d.Dist,{
+                    Position     = Vector2.new(x+w/2, y+h+4),
+                    Text         = math.floor(dist).."m",
+                    Color        = Cfg.ESP.DistColor,
+                    Transparency = 0,
+                    Visible      = true,
+                })
+            else SafeHide(d.Dist) end
 
             -- Health Bar (à esquerda do box)
             if Cfg.ESP.HP then
@@ -1426,31 +1429,26 @@ AC(RunService.RenderStepped:Connect(function()
 
                 if d.HPBg then
                     SafeSet(d.HPBg,{
-                        Position = Vector2.new(x-7, y),
-                        Size     = Vector2.new(5, h),
-                        Color    = Cfg.ESP.HPBgColor,
+                        Position     = Vector2.new(x-7, y),
+                        Size         = Vector2.new(5, h),
+                        Color        = Cfg.ESP.HPBgColor,
+                        Transparency = 0.7,
                         Visible  = true,
                     })
                 end
                 if d.HPBar then
                     SafeSet(d.HPBar,{
-                        Position = Vector2.new(x-7, barY),
-                        Size     = Vector2.new(5, barH),
-                        Color    = hpCol,
-                        Visible  = true,
+                        Position=Vector2.new(x-7,barY), Size=Vector2.new(5,barH),
+                        Color=hpCol, Transparency=0, Visible=true,
                     })
                 end
-            else
-                SafeHide(d.HPBg); SafeHide(d.HPBar)
-            end
+            else SafeHide(d.HPBg); SafeHide(d.HPBar) end
 
-            -- Tracer (da base da tela ao pé do player)
+            -- Tracer
             if Cfg.ESP.Tracers and d.Tracer then
                 SafeSet(d.Tracer,{
-                    From    = Vector2.new(cx, vs.Y),
-                    To      = Vector2.new(x+w/2, y+h),
-                    Color   = Cfg.ESP.TracerColor,
-                    Visible = true,
+                    From=Vector2.new(cx,vs.Y), To=Vector2.new(x+w/2,y+h),
+                    Color=Cfg.ESP.TracerColor, Transparency=0.7, Visible=true,
                 })
             else SafeHide(d.Tracer) end
 
@@ -1458,7 +1456,7 @@ AC(RunService.RenderStepped:Connect(function()
             if Cfg.ESP.HeldTool and d.Tool then
                 local tn = GetHeldTool(c)
                 if tn then
-                    SafeSet(d.Tool,{Position=Vector2.new(x+w/2,y-32),Text="["..tn.."]",Color=Cfg.ESP.ToolColor,Visible=true})
+                    SafeSet(d.Tool,{Position=Vector2.new(x+w/2,y-32),Text="["..tn.."]",Color=Cfg.ESP.ToolColor,Transparency=0,Visible=true})
                 else SafeHide(d.Tool) end
             else SafeHide(d.Tool) end
 
@@ -1479,34 +1477,33 @@ AC(RunService.RenderStepped:Connect(function()
             local x,y,w,h = bx,by,bw,bh
 
             if Cfg.Xray.Box and d.XBox then
-                SafeSet(d.XBox,{Position=Vector2.new(x,y),Size=Vector2.new(w,h),Color=Cfg.Xray.BoxColor,Visible=true})
+                SafeSet(d.XBox,{Position=Vector2.new(x,y),Size=Vector2.new(w,h),Color=Cfg.Xray.BoxColor,Transparency=0.7,Visible=true})
             else SafeHide(d.XBox) end
 
             if Cfg.Xray.Fill and d.XFill then
-                SafeSet(d.XFill,{Position=Vector2.new(x,y),Size=Vector2.new(w,h),Color=Cfg.Xray.FillColor,Visible=true})
+                SafeSet(d.XFill,{Position=Vector2.new(x,y),Size=Vector2.new(w,h),Color=Cfg.Xray.FillColor,Transparency=0.7,Visible=true})
             else SafeHide(d.XFill) end
 
+            -- Name e Dist funcionam INDEPENDENTEMENTE no Xray
             if Cfg.Xray.Names and d.XName then
-                SafeSet(d.XName,{Position=Vector2.new(x+w/2,y-18),Text="["..player.DisplayName.."]",Color=Cfg.Xray.NameColor,Visible=true})
-                SafeHide(d.XDist)
-            else
-                SafeHide(d.XName)
-                if Cfg.Xray.Dist and d.XDist then
-                    SafeSet(d.XDist,{Position=Vector2.new(x+w/2,y+h+4),Text=math.floor(dist).."m",Color=Cfg.Xray.DistColor,Visible=true})
-                else SafeHide(d.XDist) end
-            end
+                SafeSet(d.XName,{Position=Vector2.new(x+w/2,y-18),Text="["..player.DisplayName.."]",Color=Cfg.Xray.NameColor,Transparency=0,Visible=true})
+            else SafeHide(d.XName) end
+
+            if Cfg.Xray.Dist and d.XDist then
+                SafeSet(d.XDist,{Position=Vector2.new(x+w/2,y+h+4),Text=math.floor(dist).."m",Color=Cfg.Xray.DistColor,Transparency=0,Visible=true})
+            else SafeHide(d.XDist) end
 
             if Cfg.Xray.HP then
                 local hp,mhp = GetHP(c)
                 local ratio  = math.clamp(hp/mhp,0,1)
                 local barH   = h*ratio
                 local barY   = y+(h-barH)
-                if d.XHPBg  then SafeSet(d.XHPBg, {Position=Vector2.new(x+w+5,y),  Size=Vector2.new(5,h),   Color=Cfg.Xray.HPBgColor,Visible=true}) end
-                if d.XHPBar then SafeSet(d.XHPBar,{Position=Vector2.new(x+w+5,barY),Size=Vector2.new(5,barH),Color=Cfg.Xray.HPColor,  Visible=true}) end
+                if d.XHPBg  then SafeSet(d.XHPBg, {Position=Vector2.new(x+w+5,y),  Size=Vector2.new(5,h),   Color=Cfg.Xray.HPBgColor,Transparency=0.7,Visible=true}) end
+                if d.XHPBar then SafeSet(d.XHPBar,{Position=Vector2.new(x+w+5,barY),Size=Vector2.new(5,barH),Color=Cfg.Xray.HPColor,  Transparency=0,  Visible=true}) end
             else SafeHide(d.XHPBg); SafeHide(d.XHPBar) end
 
             if Cfg.Xray.Tracers and d.XTracer then
-                SafeSet(d.XTracer,{From=Vector2.new(cx,vs.Y),To=Vector2.new(x+w/2,y+h),Color=Cfg.Xray.TracerColor,Visible=true})
+                SafeSet(d.XTracer,{From=Vector2.new(cx,vs.Y),To=Vector2.new(x+w/2,y+h),Color=Cfg.Xray.TracerColor,Transparency=0.7,Visible=true})
             else SafeHide(d.XTracer) end
 
             -- SKELETON CORRIGIDO
