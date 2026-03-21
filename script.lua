@@ -1,4 +1,3 @@
-
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║                   223HUB  v11.0                         ║
 -- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
@@ -260,7 +259,7 @@ _KTween:Create(KC,TweenInfo.new(0.4,Enum.EasingStyle.Quart,Enum.EasingDirection.
 task.delay(0.2,function()
     for _,v in ipairs(KC:GetDescendants()) do
         if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
-            _KTween:Create(v,TweenInfo.new(0.3),{TextTransparency=0.5}):Play()
+            _KTween:Create(v,TweenInfo.new(0.3),{TextTransparency=0}):Play()
         end
     end
 end)
@@ -795,7 +794,9 @@ local function UpdateFOVCircle()
     local show = Cfg.Aim.ShowFOV
     local cx, cy
     if Cfg.Aim.FOVFollow then
-        cx, cy = Mouse.X, Mouse.Y
+        -- GetMouseLocation retorna posição real do mouse na tela (sem offset do inset)
+        local mpos = UIS:GetMouseLocation()
+        cx, cy = mpos.X, mpos.Y
     else
         local vs = Cam.ViewportSize
         cx, cy = vs.X/2, vs.Y/2
@@ -1397,22 +1398,20 @@ AC(RunService.RenderStepped:Connect(function()
             -- Name (acima do box)
             if Cfg.ESP.Names and d.Name then
                 SafeSet(d.Name,{
-                    Position     = Vector2.new(x+w/2, y-18),
-                    Text         = player.DisplayName,
-                    Color        = Cfg.ESP.NameColor,
-                    Transparency = 0,
-                    Visible      = true,
+                    Position = Vector2.new(x+w/2, y-18),
+                    Text     = player.DisplayName,
+                    Color    = Cfg.ESP.NameColor,
+                    Visible  = true,
                 })
             else SafeHide(d.Name) end
 
             -- Distance (abaixo do box) — independente do Name
             if Cfg.ESP.Dist and d.Dist then
                 SafeSet(d.Dist,{
-                    Position     = Vector2.new(x+w/2, y+h+4),
-                    Text         = math.floor(dist).."m",
-                    Color        = Cfg.ESP.DistColor,
-                    Transparency = 0,
-                    Visible      = true,
+                    Position = Vector2.new(x+w/2, y+h+4),
+                    Text     = math.floor(dist).."m",
+                    Color    = Cfg.ESP.DistColor,
+                    Visible  = true,
                 })
             else SafeHide(d.Dist) end
 
@@ -1457,7 +1456,7 @@ AC(RunService.RenderStepped:Connect(function()
             if Cfg.ESP.HeldTool and d.Tool then
                 local tn = GetHeldTool(c)
                 if tn then
-                    SafeSet(d.Tool,{Position=Vector2.new(x+w/2,y-32),Text="["..tn.."]",Color=Cfg.ESP.ToolColor,Transparency=0,Visible=true})
+                    SafeSet(d.Tool,{Position=Vector2.new(x+w/2,y-32),Text="["..tn.."]",Color=Cfg.ESP.ToolColor,Visible=true})
                 else SafeHide(d.Tool) end
             else SafeHide(d.Tool) end
 
@@ -1487,11 +1486,11 @@ AC(RunService.RenderStepped:Connect(function()
 
             -- Name e Dist funcionam INDEPENDENTEMENTE no Xray
             if Cfg.Xray.Names and d.XName then
-                SafeSet(d.XName,{Position=Vector2.new(x+w/2,y-18),Text="["..player.DisplayName.."]",Color=Cfg.Xray.NameColor,Transparency=0,Visible=true})
+                SafeSet(d.XName,{Position=Vector2.new(x+w/2,y-18),Text="["..player.DisplayName.."]",Color=Cfg.Xray.NameColor,Visible=true})
             else SafeHide(d.XName) end
 
             if Cfg.Xray.Dist and d.XDist then
-                SafeSet(d.XDist,{Position=Vector2.new(x+w/2,y+h+4),Text=math.floor(dist).."m",Color=Cfg.Xray.DistColor,Transparency=0,Visible=true})
+                SafeSet(d.XDist,{Position=Vector2.new(x+w/2,y+h+4),Text=math.floor(dist).."m",Color=Cfg.Xray.DistColor,Visible=true})
             else SafeHide(d.XDist) end
 
             if Cfg.Xray.HP then
