@@ -422,7 +422,7 @@ local Cfg = {
         AimStrength=70, -- 1-100: quão forte puxa para o alvo
         Blacklist={},
     },
-    Trigger = { Enabled=false, TeamCheck=false, Delay=80 },
+    Trigger = { Enabled=false, TeamCheck=false, Delay=80, AutoBot=false },
     Misc = {
         Fly=false, FlySpeed=50, FlyBoost=false,
         Noclip=false,
@@ -1313,7 +1313,7 @@ AC(RunService.RenderStepped:Connect(function()
     -- ── FOV Circle (Line segments) ──
     UpdateFOVCircle()
 
-    -- ── Aimbot ──
+    -- ── Aimbot (segurar tecla) ──
     if Cfg.Aim.Aimbot and UIS:IsKeyDown(Cfg.Aim.AimKey) then
         local t = ClosestTarget()
         if t and t.Character then
@@ -1321,25 +1321,40 @@ AC(RunService.RenderStepped:Connect(function()
                       or t.Character:FindFirstChild("HumanoidRootPart")
             if part then
                 local pos = part.Position
-                -- Prediction melhorada: usa velocidade real
                 if Cfg.Aim.Prediction then
                     local hrp = t.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        local vel = hrp.AssemblyLinearVelocity
-                        -- PredStr 1-10: 1=leve, 10=forte (0.02 a 0.2s de antecipação)
                         local predTime = Cfg.Aim.PredStr * 0.02
-                        pos = pos + vel * predTime
+                        pos = pos + hrp.AssemblyLinearVelocity * predTime
                     end
                 end
-                -- AimStrength: 1-100 → alpha 0.005 a 1.0
-                -- Smoothness: 1-100 → suavidade inversa
                 local strengthAlpha = math.clamp(Cfg.Aim.AimStrength/100, 0.01, 1.0)
                 local smoothAlpha   = math.clamp((101-Cfg.Aim.Smoothness)/100, 0.01, 1.0)
-                local alpha = strengthAlpha * smoothAlpha
-                Cam.CFrame = Cam.CFrame:Lerp(
-                    CFrame.new(Cam.CFrame.Position, pos),
-                    math.clamp(alpha, 0.005, 1.0)
-                )
+                local alpha = math.clamp(strengthAlpha * smoothAlpha, 0.005, 1.0)
+                Cam.CFrame = Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position, pos), alpha)
+            end
+        end
+    end
+
+    -- ── AutoBot (aimbot automático sem tecla) ──
+    if Cfg.Trigger.AutoBot then
+        local t = ClosestTarget()
+        if t and t.Character then
+            local part = t.Character:FindFirstChild(Cfg.Aim.AimPart)
+                      or t.Character:FindFirstChild("HumanoidRootPart")
+            if part then
+                local pos = part.Position
+                if Cfg.Aim.Prediction then
+                    local hrp = t.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local predTime = Cfg.Aim.PredStr * 0.02
+                        pos = pos + hrp.AssemblyLinearVelocity * predTime
+                    end
+                end
+                local strengthAlpha = math.clamp(Cfg.Aim.AimStrength/100, 0.01, 1.0)
+                local smoothAlpha   = math.clamp((101-Cfg.Aim.Smoothness)/100, 0.01, 1.0)
+                local alpha = math.clamp(strengthAlpha * smoothAlpha, 0.005, 1.0)
+                Cam.CFrame = Cam.CFrame:Lerp(CFrame.new(Cam.CFrame.Position, pos), alpha)
             end
         end
     end
@@ -1893,6 +1908,11 @@ end)
 EnableBadge(TrgP,0,"TriggerBot","TRIG",function() return Cfg.Trigger.Enabled end,function(v) Cfg.Trigger.Enabled=v end)
 Toggle(TrgP,"Team Check",   1,function() return Cfg.Trigger.TeamCheck end,function(v) Cfg.Trigger.TeamCheck=v end)
 Slider(TrgP,"Delay (ms)",0,1000,80,3,function(v) Cfg.Trigger.Delay=v end)
+Sep(TrgP,5); SL(TrgP,"AUTO AIMBOT",6)
+Toggle(TrgP,"AutoBot (Aimbot automático)",7,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
+do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=9
+    local l=Instance.new("TextLabel",f); l.Text="Mira automaticamente sem segurar tecla.\nUsa Wall/Team Check e FOV do Aimbot."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top
+end
 
 -- ============================================================
 -- PAGE: VISUALS
