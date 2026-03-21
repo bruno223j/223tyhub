@@ -1,497 +1,285 @@
 -- ╔══════════════════════════════════════════════════════════╗
--- ║                   223HUB  v11.0                          ║
--- ║      SCRIPT FEITO POR BRUNO223J E TY                     ║
--- ║      DISCORD: .223j  |  frty2017                         ║
+-- ║                   223HUB  v11.0                         ║
+-- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
+-- ║      DISCORD: .223j  |  frty2017                        ║
 -- ╚══════════════════════════════════════════════════════════╝
 
 -- ============================================================
 -- SISTEMA DE KEY COM EXPIRAÇÃO — 4 TIPOS
--- D = Diária   (expira em 1 dia)
--- S = Semanal  (expira em 7 dias)
--- M = Mensal   (expira em 30 dias)
--- P = Permanente (nunca expira)
---
--- Formato das keys:
---   223-D-XXXXXXXX  → diária
---   223-S-XXXXXXXX  → semanal
---   223-M-XXXXXXXX  → mensal
---   223-P-XXXXXXXX  → permanente
+-- D = Diária (1 dia) | S = Semanal (7 dias)
+-- M = Mensal (30 dias) | P = Permanente
+-- Formato: 223-D-CODIGO / 223-S-CODIGO / 223-M-CODIGO / 223-P-CODIGO
 -- ============================================================
 
-local _KPlayers = game:GetService("Players")
+-- Serviços usados pelo sistema de key
 local _KCoreGui = game:GetService("CoreGui")
 local _KTween   = game:GetService("TweenService")
-local _KLP      = _KPlayers.LocalPlayer
+local _KHttp    = game:GetService("HttpService")
+local _KLP      = game:GetService("Players").LocalPlayer
 
--- ── CONFIGURAÇÕES ─────────────────────────────────────────
--- URL do seu Pastebin com as keys (raw, uma por linha)
-local KEY_URL = "https://pastebin.com/raw/SUBi64DJ"
-
--- Keys válidas hardcoded (sempre funcionam, mesmo sem internet)
--- Formato obrigatório: "223-TIPO-CODIGO"
-local VALID_KEYS_RAW = {
-
-    "223-P-BRUNO223",     -- permanente minha
-    "223-P-TY2025",       -- permanente do estudado
-}
-
--- Arquivo onde fica salvo: key + data de ativação
+-- ── CONFIGURAÇÕES ──────────────────────────────────────────
+local KEY_URL       = "https://pastebin.com/raw/zLBi64DJ"
 local KEY_SAVE_FILE = "223HUB_keydata.json"
+
+-- Keys hardcoded 
+local VALID_KEYS_RAW = {    "223-P-BRUNO223",
+    "223-P-TY2025",}
+
+-- Durações por tipo (segundos)
+local KEY_DURATION = { D=86400, S=604800, M=2592000, P=math.huge }
+local KEY_LABEL    = { D="Diária", S="Semanal", M="Mensal", P="Permanente" }
 -- ──────────────────────────────────────────────────────────
 
--- Duração em segundos por tipo
-local KEY_DURATION = {
-    D = 60 * 60 * 24,        -- 1 dia
-    S = 60 * 60 * 24 * 7,    -- 7 dias
-    M = 60 * 60 * 24 * 30,   -- 30 dias
-    P = math.huge,            -- infinito
-}
-local KEY_LABEL = {
-    D = "Diária",
-    S = "Semanal",
-    M = "Mensal",
-    P = "Permanente",
-}
-
--- Extrai o tipo de uma key (ex: "223-S-BETA01" → "S")
-local function GetKeyType(key)
-    if not key then return nil end
-    local t = key:upper():match("^223%-([DSMP])%-")
-    return t
+local function NormalizeKey(k) return (k or ""):gsub("%s+",""):upper() end
+local function GetKeyType(k)
+    return k and NormalizeKey(k):match("^223%-([DSMP])%-") or nil
 end
 
--- Normaliza a key (uppercase, sem espaços)
-local function NormalizeKey(key)
-    if not key then return "" end
-    return key:gsub("%s+",""):upper()
-end
-
--- Carrega dados salvos do disco
 local function LoadKeyData()
     if not isfile or not readfile then return nil end
-    local ok, exists = pcall(isfile, KEY_SAVE_FILE)
-    if not ok or not exists then return nil end
-    local ok2, raw = pcall(readfile, KEY_SAVE_FILE)
-    if not ok2 or not raw or raw == "" then return nil end
-    local ok3, data = pcall(function()
-        return game:GetService("HttpService"):JSONDecode(raw)
-    end)
-    if not ok3 then return nil end
-    return data  -- { key=string, activated_at=number }
+    local ok, ex = pcall(isfile, KEY_SAVE_FILE); if not ok or not ex then return nil end
+    local ok2, raw = pcall(readfile, KEY_SAVE_FILE); if not ok2 or not raw or raw=="" then return nil end
+    local ok3, data = pcall(function() return _KHttp:JSONDecode(raw) end)
+    return ok3 and data or nil
 end
 
--- Salva dados no disco
 local function SaveKeyData(key, activatedAt)
     if not writefile then return end
-    local data = { key=key, activated_at=activatedAt }
-    local ok, raw = pcall(function()
-        return game:GetService("HttpService"):JSONEncode(data)
-    end)
+    local ok, raw = pcall(function() return _KHttp:JSONEncode({key=key, activated_at=activatedAt}) end)
     if ok then pcall(writefile, KEY_SAVE_FILE, raw) end
 end
 
--- Apaga save (key expirada)
 local function ClearKeyData()
-    if not delfile then return end
-    pcall(delfile, KEY_SAVE_FILE)
+    if delfile then pcall(delfile, KEY_SAVE_FILE) end
 end
 
--- Verifica se uma key existe (hardcoded ou remoto)
 local function KeyExists(key)
     key = NormalizeKey(key)
-    if key == "" then return false end
-    -- 1. Hardcoded
-    for _, k in ipairs(VALID_KEYS_RAW) do
-        if NormalizeKey(k) == key then return true end
-    end
-    -- 2. Remoto via HTTP
-    local ok, response = pcall(function()
-        return game:HttpGet(KEY_URL, true)
-    end)
-    if ok and response then
-        for line in response:gmatch("[^\n\r]+") do
-            if NormalizeKey(line) == key then return true end
-        end
+    for _, k in ipairs(VALID_KEYS_RAW) do if NormalizeKey(k)==key then return true end end
+    local ok, resp = pcall(function() return game:HttpGet(KEY_URL, true) end)
+    if ok and resp then
+        for line in resp:gmatch("[^\n\r]+") do if NormalizeKey(line)==key then return true end end
     end
     return false
 end
 
--- Resultado da verificação:
--- returns: ok (bool), msg (string), keyType (string ou nil)
+-- Retorna: valid(bool), message(string), keyType(string), activatedAt(number)
 local function CheckKey(key, savedActivatedAt)
     key = NormalizeKey(key)
-    if key == "" then return false, "Digite uma key.", nil end
-
+    if key=="" then return false,"Digite uma key.",nil,nil end
     local ktype = GetKeyType(key)
-    if not ktype then
-        return false, "Formato inválido.\nUse: 223-D/S/M/P-CODIGO", nil
-    end
-
-    -- Verifica se a key existe
-    if not KeyExists(key) then
-        return false, "Key não encontrada.", nil
-    end
-
-    -- Key existe — verifica expiração
-    local duration = KEY_DURATION[ktype]
-    if duration == math.huge then
-        -- Permanente: nunca expira
-        return true, "Acesso Permanente ✓", ktype
-    end
-
-    -- Data de ativação: usa a salva ou agora
+    if not ktype then return false,"Formato inválido. Use: 223-D/S/M/P-CODIGO",nil,nil end
+    if not KeyExists(key) then return false,"Key não encontrada.",nil,nil end
+    if KEY_DURATION[ktype]==math.huge then return true,"Acesso Permanente ✓",ktype,nil end
     local activatedAt = savedActivatedAt or os.time()
-    local expiresAt   = activatedAt + duration
+    local expiresAt   = activatedAt + KEY_DURATION[ktype]
     local now         = os.time()
-
     if now > expiresAt then
-        -- Expirou
-        local label = KEY_LABEL[ktype] or ktype
-        return false,
-            "Key "..label.." expirada.\nAdquira uma nova key.",
-            ktype
+        return false, "Key "..KEY_LABEL[ktype].." expirada. Adquira uma nova.", ktype, nil
     end
-
-    -- Ainda válida
-    local remaining = expiresAt - now
-    local hours     = math.floor(remaining / 3600)
-    local mins      = math.floor((remaining % 3600) / 60)
-    local label     = KEY_LABEL[ktype] or ktype
+    local rem = expiresAt - now
     local timeStr
-
-    if remaining >= 60*60*24 then
-        local days = math.floor(remaining / 86400)
-        timeStr = days.."d "..math.floor((remaining%86400)/3600).."h restantes"
-    elseif remaining >= 3600 then
-        timeStr = hours.."h "..mins.."m restantes"
+    if rem >= 86400 then
+        timeStr = math.floor(rem/86400).."d "..math.floor((rem%86400)/3600).."h restantes"
+    elseif rem >= 3600 then
+        timeStr = math.floor(rem/3600).."h "..math.floor((rem%3600)/60).."m restantes"
     else
-        timeStr = mins.."m restantes"
+        timeStr = math.floor(rem/60).."m restantes"
     end
-
-    return true,
-        label.." · "..timeStr,
-        ktype,
-        activatedAt   -- retorna para salvar se for a primeira vez
+    return true, KEY_LABEL[ktype].." · "..timeStr, ktype, activatedAt
 end
 
--- ── TELA DE KEY ───────────────────────────────────────────
-if _KCoreGui:FindFirstChild("223HUB_KeyScreen") then
-    _KCoreGui:FindFirstChild("223HUB_KeyScreen"):Destroy()
+-- ── GUI DA KEY ─────────────────────────────────────────────
+if _KCoreGui:FindFirstChild("223HUB_Key") then _KCoreGui:FindFirstChild("223HUB_Key"):Destroy() end
+
+local KSG = Instance.new("ScreenGui")
+KSG.Name="223HUB_Key"; KSG.ResetOnSpawn=false; KSG.IgnoreGuiInset=true
+KSG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; KSG.Parent=_KCoreGui
+
+-- Fundo preto
+local KBG = Instance.new("Frame",KSG)
+KBG.Size=UDim2.new(1,0,1,0); KBG.BackgroundColor3=Color3.fromRGB(4,4,6); KBG.BorderSizePixel=0
+
+-- Linhas decorativas
+for i=1,8 do
+    local ln=Instance.new("Frame",KBG)
+    ln.Size=UDim2.new(1,0,0,1); ln.Position=UDim2.new(0,0,i/9,0)
+    ln.BackgroundColor3=Color3.fromRGB(165,20,20); ln.BackgroundTransparency=0.88; ln.BorderSizePixel=0
 end
 
-local _KSG = Instance.new("ScreenGui")
-_KSG.Name = "223HUB_KeyScreen"
-_KSG.ResetOnSpawn = false
-_KSG.IgnoreGuiInset = true
-_KSG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-_KSG.Parent = _KCoreGui
+-- Card
+local KC = Instance.new("Frame",KBG)
+KC.Size=UDim2.new(0,480,0,400); KC.Position=UDim2.new(0.5,-240,0.5,-200)
+KC.BackgroundColor3=Color3.fromRGB(10,10,14); KC.BorderSizePixel=0
+Instance.new("UICorner",KC).CornerRadius=UDim.new(0,10)
+local KCStroke=Instance.new("UIStroke",KC); KCStroke.Color=Color3.fromRGB(165,20,20); KCStroke.Thickness=1.5
 
--- Fundo
-local _KBG = Instance.new("Frame", _KSG)
-_KBG.Size = UDim2.new(1,0,1,0)
-_KBG.BackgroundColor3 = Color3.fromRGB(4,4,6)
-_KBG.BorderSizePixel = 0
+-- Topbar
+local KTop=Instance.new("Frame",KC); KTop.Size=UDim2.new(1,0,0,50); KTop.BackgroundColor3=Color3.fromRGB(14,4,4); KTop.BorderSizePixel=0
+Instance.new("UICorner",KTop).CornerRadius=UDim.new(0,10)
+local KTopFix=Instance.new("Frame",KTop); KTopFix.Size=UDim2.new(1,0,0.5,0); KTopFix.Position=UDim2.new(0,0,0.5,0); KTopFix.BackgroundColor3=Color3.fromRGB(14,4,4); KTopFix.BorderSizePixel=0
+local KTopDiv=Instance.new("Frame",KC); KTopDiv.Size=UDim2.new(1,0,0,1); KTopDiv.Position=UDim2.new(0,0,0,50); KTopDiv.BackgroundColor3=Color3.fromRGB(165,20,20); KTopDiv.BorderSizePixel=0
 
--- Linhas decorativas de fundo
-for i = 1,8 do
-    local ln = Instance.new("Frame", _KBG)
-    ln.Size = UDim2.new(1,0,0,1)
-    ln.Position = UDim2.new(0,0,i/9,0)
-    ln.BackgroundColor3 = Color3.fromRGB(165,20,20)
-    ln.BackgroundTransparency = 0.88
-    ln.BorderSizePixel = 0
-end
-
--- Card principal
-local _KC = Instance.new("Frame", _KBG)
-_KC.Size = UDim2.new(0,480,0,390)
-_KC.Position = UDim2.new(0.5,-240,0.5,-195)
-_KC.BackgroundColor3 = Color3.fromRGB(10,10,14)
-_KC.BorderSizePixel = 0
-Instance.new("UICorner", _KC).CornerRadius = UDim.new(0,10)
-local _KCardStroke = Instance.new("UIStroke", _KC)
-_KCardStroke.Color = Color3.fromRGB(165,20,20)
-_KCardStroke.Thickness = 1.5
-
--- Topo escuro
-local _KTop = Instance.new("Frame", _KC)
-_KTop.Size = UDim2.new(1,0,0,50)
-_KTop.BackgroundColor3 = Color3.fromRGB(14,4,4)
-_KTop.BorderSizePixel = 0
-Instance.new("UICorner", _KTop).CornerRadius = UDim.new(0,10)
-local _KTopFix = Instance.new("Frame", _KTop)
-_KTopFix.Size = UDim2.new(1,0,0.5,0)
-_KTopFix.Position = UDim2.new(0,0,0.5,0)
-_KTopFix.BackgroundColor3 = Color3.fromRGB(14,4,4)
-_KTopFix.BorderSizePixel = 0
-
-local function KLbl(parent,text,sz,col,x,y,w,h,font,xalign)
-    local l = Instance.new("TextLabel", parent)
-    l.Text = text
-    l.Size = UDim2.new(w or 1,0,0,h or 20)
-    l.Position = UDim2.new(x or 0,0,0,y)
-    l.BackgroundTransparency = 1
-    l.TextColor3 = col
-    l.Font = font or Enum.Font.Gotham
-    l.TextSize = sz
-    l.TextXAlignment = xalign or Enum.TextXAlignment.Center
-    l.TextWrapped = true
+local function KL(parent,text,sz,col,y,font,xalign)
+    local l=Instance.new("TextLabel",parent)
+    l.Text=text; l.Size=UDim2.new(1,-40,0,sz+4); l.Position=UDim2.new(0,20,0,y)
+    l.BackgroundTransparency=1; l.TextColor3=col; l.Font=font or Enum.Font.Gotham
+    l.TextSize=sz; l.TextXAlignment=xalign or Enum.TextXAlignment.Center; l.TextWrapped=true
     return l
 end
 
--- Logo no topo
-KLbl(_KTop,"◈  223HUB",20,Color3.fromRGB(255,255,255),0,0,1,50,Enum.Font.GothamBold)
+-- Logo
+local KLogo=Instance.new("TextLabel",KTop); KLogo.Text="◈  223HUB"
+KLogo.Size=UDim2.new(1,0,1,0); KLogo.BackgroundTransparency=1; KLogo.TextColor3=Color3.fromRGB(255,255,255)
+KLogo.Font=Enum.Font.GothamBold; KLogo.TextSize=20; KLogo.TextXAlignment=Enum.TextXAlignment.Center
 
--- Separador topo
-local _KSep = Instance.new("Frame",_KC); _KSep.Size=UDim2.new(1,0,0,1); _KSep.Position=UDim2.new(0,0,0,50); _KSep.BackgroundColor3=Color3.fromRGB(165,20,20); _KSep.BorderSizePixel=0
+-- Ícone + títulos
+KL(KC,"🔐",38,Color3.fromRGB(255,255,255),60,Enum.Font.GothamBold)
+KL(KC,"VERIFICAÇÃO DE ACESSO",13,Color3.fromRGB(165,20,20),108,Enum.Font.GothamBold)
+KL(KC,"Insira sua key para acessar o 223HUB v11",11,Color3.fromRGB(75,75,90),128)
 
--- Ícone
-KLbl(_KC,"🔐",38,Color3.fromRGB(255,255,255),0,62,1,44,Enum.Font.GothamBold)
-
--- Título
-KLbl(_KC,"VERIFICAÇÃO DE ACESSO",13,Color3.fromRGB(165,20,20),0,110,1,18,Enum.Font.GothamBold)
-
--- Subtítulo
-KLbl(_KC,"Insira sua key para acessar o 223HUB v11",11,Color3.fromRGB(80,80,95),0,130,1,16)
-
--- Badges dos tipos de key
-local _KBadgeRow = Instance.new("Frame",_KC)
-_KBadgeRow.Size = UDim2.new(1,-40,0,26)
-_KBadgeRow.Position = UDim2.new(0,20,0,152)
-_KBadgeRow.BackgroundTransparency = 1
-local _KBadgeLayout = Instance.new("UIListLayout",_KBadgeRow)
-_KBadgeLayout.FillDirection = Enum.FillDirection.Horizontal
-_KBadgeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-_KBadgeLayout.Padding = UDim.new(0,6)
-
-local badgeTypes = {
-    {label="DIÁRIA",   col=Color3.fromRGB(200,130,20)},
-    {label="SEMANAL",  col=Color3.fromRGB(50,140,210)},
-    {label="MENSAL",   col=Color3.fromRGB(115,28,195)},
-    {label="PERMANENTE",col=Color3.fromRGB(30,160,70)},
-}
-for _, b in ipairs(badgeTypes) do
-    local badge = Instance.new("TextLabel",_KBadgeRow)
-    badge.Text = b.label
-    badge.Size = UDim2.new(0,0,1,0)
-    badge.AutomaticSize = Enum.AutomaticSize.X
-    badge.BackgroundColor3 = b.col
-    badge.BackgroundTransparency = 0.7
-    badge.TextColor3 = b.col
-    badge.Font = Enum.Font.GothamBold
-    badge.TextSize = 9
-    badge.BorderSizePixel = 0
-    Instance.new("UICorner",badge).CornerRadius = UDim.new(0,4)
-    local pad = Instance.new("UIPadding",badge)
-    pad.PaddingLeft=UDim.new(0,6); pad.PaddingRight=UDim.new(0,6)
+-- Badges de tipo
+local KBadgeRow=Instance.new("Frame",KC); KBadgeRow.Size=UDim2.new(1,-40,0,26); KBadgeRow.Position=UDim2.new(0,20,0,152); KBadgeRow.BackgroundTransparency=1
+local KBL=Instance.new("UIListLayout",KBadgeRow); KBL.FillDirection=Enum.FillDirection.Horizontal; KBL.HorizontalAlignment=Enum.HorizontalAlignment.Center; KBL.Padding=UDim.new(0,6)
+local BADGE_INFO={{label="DIÁRIA",col=Color3.fromRGB(200,130,20)},{label="SEMANAL",col=Color3.fromRGB(50,140,210)},{label="MENSAL",col=Color3.fromRGB(115,28,195)},{label="PERMANENTE",col=Color3.fromRGB(30,160,70)}}
+for _,b in ipairs(BADGE_INFO) do
+    local bdg=Instance.new("TextLabel",KBadgeRow); bdg.Text=b.label; bdg.Size=UDim2.new(0,0,1,0); bdg.AutomaticSize=Enum.AutomaticSize.X
+    bdg.BackgroundColor3=b.col; bdg.BackgroundTransparency=0.7; bdg.TextColor3=b.col
+    bdg.Font=Enum.Font.GothamBold; bdg.TextSize=9; bdg.BorderSizePixel=0
+    Instance.new("UICorner",bdg).CornerRadius=UDim.new(0,4)
+    local pad=Instance.new("UIPadding",bdg); pad.PaddingLeft=UDim.new(0,6); pad.PaddingRight=UDim.new(0,6)
 end
 
--- Campo de input
-local _KInputWrap = Instance.new("Frame",_KC)
-_KInputWrap.Size = UDim2.new(1,-40,0,42)
-_KInputWrap.Position = UDim2.new(0,20,0,186)
-_KInputWrap.BackgroundColor3 = Color3.fromRGB(16,16,20)
-_KInputWrap.BorderSizePixel = 0
-Instance.new("UICorner",_KInputWrap).CornerRadius = UDim.new(0,6)
-local _KInputStroke = Instance.new("UIStroke",_KInputWrap)
-_KInputStroke.Color = Color3.fromRGB(38,38,48)
-_KInputStroke.Thickness = 1
+-- Input
+local KInputWrap=Instance.new("Frame",KC); KInputWrap.Size=UDim2.new(1,-40,0,44); KInputWrap.Position=UDim2.new(0,20,0,188); KInputWrap.BackgroundColor3=Color3.fromRGB(16,16,20); KInputWrap.BorderSizePixel=0
+Instance.new("UICorner",KInputWrap).CornerRadius=UDim.new(0,6)
+local KIS=Instance.new("UIStroke",KInputWrap); KIS.Color=Color3.fromRGB(38,38,48); KIS.Thickness=1
 
-local _KInput = Instance.new("TextBox",_KInputWrap)
-_KInput.Size = UDim2.new(1,-46,1,0)
-_KInput.Position = UDim2.new(0,10,0,0)
-_KInput.BackgroundTransparency = 1
-_KInput.PlaceholderText = "Ex: 223-P-CODIGO / 223-D-CODIGO"
-_KInput.PlaceholderColor3 = Color3.fromRGB(55,55,68)
-_KInput.Text = ""
-_KInput.TextColor3 = Color3.fromRGB(210,210,215)
-_KInput.Font = Enum.Font.Code
-_KInput.TextSize = 13
-_KInput.ClearTextOnFocus = false
+local KInput=Instance.new("TextBox",KInputWrap); KInput.Size=UDim2.new(1,-50,1,0); KInput.Position=UDim2.new(0,10,0,0)
+KInput.BackgroundTransparency=1; KInput.PlaceholderText="Ex: 223-P-CODIGO"; KInput.PlaceholderColor3=Color3.fromRGB(50,50,65)
+KInput.Text=""; KInput.TextColor3=Color3.fromRGB(210,210,215); KInput.Font=Enum.Font.Code; KInput.TextSize=13; KInput.ClearTextOnFocus=false
 
--- Botão limpar campo
-local _KClearBtn = Instance.new("TextButton",_KInputWrap)
-_KClearBtn.Size = UDim2.new(0,32,0,30)
-_KClearBtn.Position = UDim2.new(1,-36,0,6)
-_KClearBtn.BackgroundColor3 = Color3.fromRGB(28,28,34)
-_KClearBtn.TextColor3 = Color3.fromRGB(100,100,115)
-_KClearBtn.Font = Enum.Font.GothamBold
-_KClearBtn.TextSize = 12
-_KClearBtn.Text = "✕"
-_KClearBtn.BorderSizePixel = 0
-Instance.new("UICorner",_KClearBtn).CornerRadius = UDim.new(0,4)
-_KClearBtn.MouseButton1Click:Connect(function() _KInput.Text="" end)
+local KClearBtn=Instance.new("TextButton",KInputWrap); KClearBtn.Size=UDim2.new(0,34,0,32); KClearBtn.Position=UDim2.new(1,-38,0,6)
+KClearBtn.BackgroundColor3=Color3.fromRGB(26,26,32); KClearBtn.TextColor3=Color3.fromRGB(90,90,105); KClearBtn.Font=Enum.Font.GothamBold; KClearBtn.TextSize=12; KClearBtn.Text="✕"; KClearBtn.BorderSizePixel=0
+Instance.new("UICorner",KClearBtn).CornerRadius=UDim.new(0,4)
+KClearBtn.MouseButton1Click:Connect(function() KInput.Text="" end)
 
--- Status (erro/sucesso/info)
-local _KStatus = Instance.new("TextLabel",_KC)
-_KStatus.Size = UDim2.new(1,-40,0,32)
-_KStatus.Position = UDim2.new(0,20,0,234)
-_KStatus.BackgroundTransparency = 1
-_KStatus.Text = ""
-_KStatus.TextColor3 = Color3.fromRGB(210,45,45)
-_KStatus.Font = Enum.Font.Gotham
-_KStatus.TextSize = 11
-_KStatus.TextXAlignment = Enum.TextXAlignment.Center
-_KStatus.TextWrapped = true
+-- Status
+local KStatus=Instance.new("TextLabel",KC); KStatus.Size=UDim2.new(1,-40,0,34); KStatus.Position=UDim2.new(0,20,0,238); KStatus.BackgroundTransparency=1
+KStatus.Text=""; KStatus.TextColor3=Color3.fromRGB(210,45,45); KStatus.Font=Enum.Font.Gotham; KStatus.TextSize=11; KStatus.TextXAlignment=Enum.TextXAlignment.Center; KStatus.TextWrapped=true
 
 -- Botão verificar
-local _KBtn = Instance.new("TextButton",_KC)
-_KBtn.Size = UDim2.new(1,-40,0,42)
-_KBtn.Position = UDim2.new(0,20,0,272)
-_KBtn.BackgroundColor3 = Color3.fromRGB(165,20,20)
-_KBtn.TextColor3 = Color3.fromRGB(255,255,255)
-_KBtn.Font = Enum.Font.GothamBold
-_KBtn.TextSize = 14
-_KBtn.Text = "VERIFICAR KEY"
-_KBtn.BorderSizePixel = 0
-Instance.new("UICorner",_KBtn).CornerRadius = UDim.new(0,6)
-_KBtn.MouseEnter:Connect(function() _KTween:Create(_KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(210,45,45)}):Play() end)
-_KBtn.MouseLeave:Connect(function() _KTween:Create(_KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(165,20,20)}):Play() end)
+local KBtn=Instance.new("TextButton",KC); KBtn.Size=UDim2.new(1,-40,0,44); KBtn.Position=UDim2.new(0,20,0,278)
+KBtn.BackgroundColor3=Color3.fromRGB(165,20,20); KBtn.TextColor3=Color3.fromRGB(255,255,255); KBtn.Font=Enum.Font.GothamBold; KBtn.TextSize=14; KBtn.Text="VERIFICAR KEY"; KBtn.BorderSizePixel=0
+Instance.new("UICorner",KBtn).CornerRadius=UDim.new(0,6)
+KBtn.MouseEnter:Connect(function() _KTween:Create(KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(210,45,45)}):Play() end)
+KBtn.MouseLeave:Connect(function() _KTween:Create(KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(165,20,20)}):Play() end)
 
--- Informação de key salva
-local _KSavedInfo = Instance.new("TextLabel",_KC)
-_KSavedInfo.Size = UDim2.new(1,-40,0,14)
-_KSavedInfo.Position = UDim2.new(0,20,0,320)
-_KSavedInfo.BackgroundTransparency = 1
-_KSavedInfo.Text = ""
-_KSavedInfo.TextColor3 = Color3.fromRGB(50,180,75)
-_KSavedInfo.Font = Enum.Font.Gotham
-_KSavedInfo.TextSize = 10
-_KSavedInfo.TextXAlignment = Enum.TextXAlignment.Center
+-- Info salva + rodapé
+local KSavedInfo=Instance.new("TextLabel",KC); KSavedInfo.Size=UDim2.new(1,-40,0,16); KSavedInfo.Position=UDim2.new(0,20,0,328); KSavedInfo.BackgroundTransparency=1
+KSavedInfo.Text=""; KSavedInfo.TextColor3=Color3.fromRGB(30,160,70); KSavedInfo.Font=Enum.Font.Gotham; KSavedInfo.TextSize=10; KSavedInfo.TextXAlignment=Enum.TextXAlignment.Center
 
--- Timer de expiração (aparece após validação bem-sucedida)
-local _KTimerLabel = Instance.new("TextLabel",_KC)
-_KTimerLabel.Size = UDim2.new(1,-40,0,14)
-_KTimerLabel.Position = UDim2.new(0,20,0,337)
-_KTimerLabel.BackgroundTransparency = 1
-_KTimerLabel.Text = ""
-_KTimerLabel.TextColor3 = Color3.fromRGB(90,90,105)
-_KTimerLabel.Font = Enum.Font.Code
-_KTimerLabel.TextSize = 10
-_KTimerLabel.TextXAlignment = Enum.TextXAlignment.Center
+local KFooter=Instance.new("TextLabel",KC); KFooter.Size=UDim2.new(1,-40,0,14); KFooter.Position=UDim2.new(0,20,0,348)
+KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP"; KFooter.TextColor3=Color3.fromRGB(40,40,52); KFooter.Font=Enum.Font.Gotham; KFooter.TextSize=9; KFooter.TextXAlignment=Enum.TextXAlignment.Center
 
--- Rodapé
-KLbl(_KC,"DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP",9,Color3.fromRGB(45,45,58),0,357,1,14)
-
--- Animação entrada
-_KC.BackgroundTransparency = 1
-_KC.Position = UDim2.new(0.5,-240,0.58,-195)
-for _,v in ipairs(_KC:GetDescendants()) do
+-- Animação de entrada
+KC.BackgroundTransparency=1; KC.Position=UDim2.new(0.5,-240,0.58,-200)
+for _,v in ipairs(KC:GetDescendants()) do
     if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then v.TextTransparency=1 end
 end
-_KTween:Create(_KC,TweenInfo.new(0.4,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
-    Position=UDim2.new(0.5,-240,0.5,-195), BackgroundTransparency=0
-}):Play()
+_KTween:Create(KC,TweenInfo.new(0.4,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{Position=UDim2.new(0.5,-240,0.5,-200),BackgroundTransparency=0}):Play()
 task.delay(0.2,function()
-    for _,v in ipairs(_KC:GetDescendants()) do
+    for _,v in ipairs(KC:GetDescendants()) do
         if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
             _KTween:Create(v,TweenInfo.new(0.3),{TextTransparency=0}):Play()
         end
     end
 end)
 
--- ── Lógica Principal ──────────────────────────────────────
-local _keyVerified = false
-
-local function SetStatus(msg, color)
-    _KStatus.Text  = msg
-    _KStatus.TextColor3 = color or Color3.fromRGB(210,45,45)
+-- ── LÓGICA ─────────────────────────────────────────────────
+local function SetStatus(msg,col)
+    KStatus.Text=msg; KStatus.TextColor3=col or Color3.fromRGB(210,45,45)
 end
 
-local function AnimateSuccess(timerText, callback)
-    _KCardStroke.Color = Color3.fromRGB(30,160,70)
-    _KBtn.BackgroundColor3 = Color3.fromRGB(25,130,55)
-    _KBtn.Text = "✓  ACESSO CONCEDIDO"
-    _KTimerLabel.Text = timerText or ""
-    task.delay(0.9, function()
-        _KTween:Create(_KBG, TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
-        _KTween:Create(_KC,  TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
-        for _,v in ipairs(_KC:GetDescendants()) do
-            if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
-                _KTween:Create(v,TweenInfo.new(0.25),{TextTransparency=1}):Play()
-            end
-        end
-        task.delay(0.5, function()
-            if _KSG and _KSG.Parent then _KSG:Destroy() end
-            callback()
-        end)
-    end)
-end
-
--- Shake de erro no card
 local function ShakeCard()
-    local origin = UDim2.new(0.5,-240,0.5,-195)
-    local offsets = {-6,6,-4,4,-2,0}
+    local ox=0.5; local oy=0.5
+    local seq={{-6,0.04},{6,0.04},{-4,0.04},{4,0.04},{-2,0.04},{0,0.04}}
     local function step(i)
-        if i > #offsets then return end
-        _KTween:Create(_KC,TweenInfo.new(0.04),{Position=UDim2.new(0.5,-240+offsets[i],0.5,-195)}):Play()
-        task.delay(0.04, function() step(i+1) end)
+        if i>#seq then return end
+        _KTween:Create(KC,TweenInfo.new(seq[i][2]),{Position=UDim2.new(ox,-240+seq[i][1],oy,-200)}):Play()
+        task.delay(seq[i][2]+0.01,function() step(i+1) end)
     end
     step(1)
 end
 
+-- CORREÇÃO PRINCIPAL: em vez de repeat..until (bloqueia render),
+-- usamos um callback que só executa o hub quando aprovado
+local function OnKeyApproved()
+    -- Fecha a GUI de key com animação
+    _KTween:Create(KBG,TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+    _KTween:Create(KC, TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+    for _,v in ipairs(KC:GetDescendants()) do
+        if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+            _KTween:Create(v,TweenInfo.new(0.25),{TextTransparency=1}):Play()
+        end
+    end
+    task.delay(0.55,function()
+        if KSG and KSG.Parent then KSG:Destroy() end
+        -- Inicia o hub principal em nova thread
+        task.spawn(_223HUB_MAIN)
+    end)
+end
+
 local function TryKey(key, savedActivatedAt)
     local normKey = NormalizeKey(key or "")
-    if normKey == "" then SetStatus("❌ Digite uma key antes de verificar."); return end
+    if normKey=="" then SetStatus("❌ Digite uma key antes de verificar."); return end
 
-    _KBtn.Text = "⏳ Verificando..."
-    _KBtn.Active = false
-    _KInputStroke.Color = Color3.fromRGB(38,38,48)
-    SetStatus("", Color3.fromRGB(90,90,105))
+    KBtn.Text="⏳ Verificando..."; KBtn.Active=false
+    KIS.Color=Color3.fromRGB(38,38,48); SetStatus("",Color3.fromRGB(80,80,95))
 
+    -- Roda em task.spawn para não bloquear a GUI
     task.spawn(function()
         local ok, msg, ktype, activatedAt = CheckKey(normKey, savedActivatedAt)
-        _KBtn.Active = true
-        _KBtn.Text = "VERIFICAR KEY"
+        KBtn.Active=true; KBtn.Text="VERIFICAR KEY"
 
         if ok then
-            _keyVerified = true
-            -- Salva localmente se ainda não estava salvo
-            local saveTime = activatedAt or savedActivatedAt or os.time()
-            if ktype ~= "P" then
-                SaveKeyData(normKey, saveTime)
-                _KSavedInfo.Text = "✓ Key salva localmente"
-            end
+            -- Sucesso visual
+            KCStroke.Color=Color3.fromRGB(30,160,70)
+            KBtn.BackgroundColor3=Color3.fromRGB(25,130,55)
+            KBtn.Text="✓  ACESSO CONCEDIDO"
             SetStatus("✓ "..msg, Color3.fromRGB(30,160,70))
-            AnimateSuccess(msg, function()
-                _keyVerified = true
-            end)
+            KSavedInfo.Text="✓ Key salva localmente"
+            -- Salva no disco
+            local saveTime = activatedAt or savedActivatedAt or os.time()
+            if ktype ~= "P" then SaveKeyData(normKey, saveTime) end
+            -- Abre o hub após 0.8s
+            task.delay(0.8, OnKeyApproved)
         else
-            -- Key inválida ou expirada
-            if msg:find("expirada") then
-                ClearKeyData()  -- limpa save para forçar nova key
-            end
-            _KInputStroke.Color = Color3.fromRGB(165,20,20)
+            if msg:find("expirada") then ClearKeyData() end
+            KIS.Color=Color3.fromRGB(165,20,20)
             SetStatus("❌ "..msg, Color3.fromRGB(210,45,45))
             ShakeCard()
         end
     end)
 end
 
-_KBtn.MouseButton1Click:Connect(function() TryKey(_KInput.Text, nil) end)
-_KInput.FocusLost:Connect(function(enter)
-    if enter then TryKey(_KInput.Text, nil) end
-end)
+KBtn.MouseButton1Click:Connect(function() TryKey(KInput.Text, nil) end)
+KInput.FocusLost:Connect(function(enter) if enter then TryKey(KInput.Text, nil) end end)
 
--- Tenta carregar key salva automaticamente
+-- Verifica key salva automaticamente
 local _savedData = LoadKeyData()
-if _savedData and _savedData.key and _savedData.key ~= "" then
-    _KInput.Text = _savedData.key
+if _savedData and _savedData.key and _savedData.key~="" then
+    KInput.Text = _savedData.key
     local ktype = GetKeyType(_savedData.key)
-    local label = ktype and (KEY_LABEL[ktype] or ktype) or "?"
-    _KSavedInfo.Text = "🔒 Key "..label.." salva encontrada, verificando..."
-    task.delay(0.7, function()
-        TryKey(_savedData.key, _savedData.activated_at)
-    end)
+    KSavedInfo.Text = "🔒 Key "..(KEY_LABEL[ktype] or "?").." salva, verificando..."
+    task.delay(0.7, function() TryKey(_savedData.key, _savedData.activated_at) end)
 end
 
--- Aguarda verificação — script trava aqui até key ser válida
-repeat task.wait(0.05) until _keyVerified
-task.wait(1.1)  -- aguarda animação de saída
-
 -- ============================================================
--- FIM DO SISTEMA DE KEY — script principal 223HUB v11 abaixo
+-- HUB PRINCIPAL — só roda depois da key ser aprovada
+-- Toda a lógica do 223HUB fica dentro desta função
 -- ============================================================
+function _223HUB_MAIN()
 
 local Players         = game:GetService("Players")
 local RunService      = game:GetService("RunService")
@@ -2324,3 +2112,5 @@ Btn(LogP,"↺ Atualizar",2,RefLog,C.bg4,C.gold); RefLog()
 task.spawn(function() while true do task.wait(5); if _curTab=="Settings" then pcall(RefLog) end end end)
 
 print("[223HUB v11.0] ✓ LOADED | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
+
+end -- fim de _223HUB_MAIN()
