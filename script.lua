@@ -17,7 +17,7 @@ local _KHttp    = game:GetService("HttpService")
 local _KLP      = game:GetService("Players").LocalPlayer
 
 -- ── CONFIGURAÇÕES ──────────────────────────────────────────
-local KEY_URL       = "https://pastebin.com/raw/zLBi64DJ"
+local KEY_URL       = "https://raw.githubusercontent.com/bruno223j/223HUB/refs/heads/main/keys"
 local KEY_SAVE_FILE = "223HUB_keydata.json"
 
 -- Keys pessoais hardcoded (funcionam sem internet)
