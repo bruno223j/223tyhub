@@ -1,8 +1,497 @@
 -- ╔══════════════════════════════════════════════════════════╗
--- ║                   223HUB  v11.0                         ║
--- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
--- ║      DISCORD: .223j  |  frty2017                        ║
+-- ║                   223HUB  v11.0                          ║
+-- ║      SCRIPT FEITO POR BRUNO223J E TY                     ║
+-- ║      DISCORD: .223j  |  frty2017                         ║
 -- ╚══════════════════════════════════════════════════════════╝
+
+-- ============================================================
+-- SISTEMA DE KEY COM EXPIRAÇÃO — 4 TIPOS
+-- D = Diária   (expira em 1 dia)
+-- S = Semanal  (expira em 7 dias)
+-- M = Mensal   (expira em 30 dias)
+-- P = Permanente (nunca expira)
+--
+-- Formato das keys:
+--   223-D-XXXXXXXX  → diária
+--   223-S-XXXXXXXX  → semanal
+--   223-M-XXXXXXXX  → mensal
+--   223-P-XXXXXXXX  → permanente
+-- ============================================================
+
+local _KPlayers = game:GetService("Players")
+local _KCoreGui = game:GetService("CoreGui")
+local _KTween   = game:GetService("TweenService")
+local _KLP      = _KPlayers.LocalPlayer
+
+-- ── CONFIGURAÇÕES ─────────────────────────────────────────
+-- URL do seu Pastebin com as keys (raw, uma por linha)
+local KEY_URL = "https://pastebin.com/raw/SUBi64DJ"
+
+-- Keys válidas hardcoded (sempre funcionam, mesmo sem internet)
+-- Formato obrigatório: "223-TIPO-CODIGO"
+local VALID_KEYS_RAW = {
+
+    "223-P-BRUNO223",     -- permanente minha
+    "223-P-TY2025",       -- permanente do estudado
+}
+
+-- Arquivo onde fica salvo: key + data de ativação
+local KEY_SAVE_FILE = "223HUB_keydata.json"
+-- ──────────────────────────────────────────────────────────
+
+-- Duração em segundos por tipo
+local KEY_DURATION = {
+    D = 60 * 60 * 24,        -- 1 dia
+    S = 60 * 60 * 24 * 7,    -- 7 dias
+    M = 60 * 60 * 24 * 30,   -- 30 dias
+    P = math.huge,            -- infinito
+}
+local KEY_LABEL = {
+    D = "Diária",
+    S = "Semanal",
+    M = "Mensal",
+    P = "Permanente",
+}
+
+-- Extrai o tipo de uma key (ex: "223-S-BETA01" → "S")
+local function GetKeyType(key)
+    if not key then return nil end
+    local t = key:upper():match("^223%-([DSMP])%-")
+    return t
+end
+
+-- Normaliza a key (uppercase, sem espaços)
+local function NormalizeKey(key)
+    if not key then return "" end
+    return key:gsub("%s+",""):upper()
+end
+
+-- Carrega dados salvos do disco
+local function LoadKeyData()
+    if not isfile or not readfile then return nil end
+    local ok, exists = pcall(isfile, KEY_SAVE_FILE)
+    if not ok or not exists then return nil end
+    local ok2, raw = pcall(readfile, KEY_SAVE_FILE)
+    if not ok2 or not raw or raw == "" then return nil end
+    local ok3, data = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(raw)
+    end)
+    if not ok3 then return nil end
+    return data  -- { key=string, activated_at=number }
+end
+
+-- Salva dados no disco
+local function SaveKeyData(key, activatedAt)
+    if not writefile then return end
+    local data = { key=key, activated_at=activatedAt }
+    local ok, raw = pcall(function()
+        return game:GetService("HttpService"):JSONEncode(data)
+    end)
+    if ok then pcall(writefile, KEY_SAVE_FILE, raw) end
+end
+
+-- Apaga save (key expirada)
+local function ClearKeyData()
+    if not delfile then return end
+    pcall(delfile, KEY_SAVE_FILE)
+end
+
+-- Verifica se uma key existe (hardcoded ou remoto)
+local function KeyExists(key)
+    key = NormalizeKey(key)
+    if key == "" then return false end
+    -- 1. Hardcoded
+    for _, k in ipairs(VALID_KEYS_RAW) do
+        if NormalizeKey(k) == key then return true end
+    end
+    -- 2. Remoto via HTTP
+    local ok, response = pcall(function()
+        return game:HttpGet(KEY_URL, true)
+    end)
+    if ok and response then
+        for line in response:gmatch("[^\n\r]+") do
+            if NormalizeKey(line) == key then return true end
+        end
+    end
+    return false
+end
+
+-- Resultado da verificação:
+-- returns: ok (bool), msg (string), keyType (string ou nil)
+local function CheckKey(key, savedActivatedAt)
+    key = NormalizeKey(key)
+    if key == "" then return false, "Digite uma key.", nil end
+
+    local ktype = GetKeyType(key)
+    if not ktype then
+        return false, "Formato inválido.\nUse: 223-D/S/M/P-CODIGO", nil
+    end
+
+    -- Verifica se a key existe
+    if not KeyExists(key) then
+        return false, "Key não encontrada.", nil
+    end
+
+    -- Key existe — verifica expiração
+    local duration = KEY_DURATION[ktype]
+    if duration == math.huge then
+        -- Permanente: nunca expira
+        return true, "Acesso Permanente ✓", ktype
+    end
+
+    -- Data de ativação: usa a salva ou agora
+    local activatedAt = savedActivatedAt or os.time()
+    local expiresAt   = activatedAt + duration
+    local now         = os.time()
+
+    if now > expiresAt then
+        -- Expirou
+        local label = KEY_LABEL[ktype] or ktype
+        return false,
+            "Key "..label.." expirada.\nAdquira uma nova key.",
+            ktype
+    end
+
+    -- Ainda válida
+    local remaining = expiresAt - now
+    local hours     = math.floor(remaining / 3600)
+    local mins      = math.floor((remaining % 3600) / 60)
+    local label     = KEY_LABEL[ktype] or ktype
+    local timeStr
+
+    if remaining >= 60*60*24 then
+        local days = math.floor(remaining / 86400)
+        timeStr = days.."d "..math.floor((remaining%86400)/3600).."h restantes"
+    elseif remaining >= 3600 then
+        timeStr = hours.."h "..mins.."m restantes"
+    else
+        timeStr = mins.."m restantes"
+    end
+
+    return true,
+        label.." · "..timeStr,
+        ktype,
+        activatedAt   -- retorna para salvar se for a primeira vez
+end
+
+-- ── TELA DE KEY ───────────────────────────────────────────
+if _KCoreGui:FindFirstChild("223HUB_KeyScreen") then
+    _KCoreGui:FindFirstChild("223HUB_KeyScreen"):Destroy()
+end
+
+local _KSG = Instance.new("ScreenGui")
+_KSG.Name = "223HUB_KeyScreen"
+_KSG.ResetOnSpawn = false
+_KSG.IgnoreGuiInset = true
+_KSG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+_KSG.Parent = _KCoreGui
+
+-- Fundo
+local _KBG = Instance.new("Frame", _KSG)
+_KBG.Size = UDim2.new(1,0,1,0)
+_KBG.BackgroundColor3 = Color3.fromRGB(4,4,6)
+_KBG.BorderSizePixel = 0
+
+-- Linhas decorativas de fundo
+for i = 1,8 do
+    local ln = Instance.new("Frame", _KBG)
+    ln.Size = UDim2.new(1,0,0,1)
+    ln.Position = UDim2.new(0,0,i/9,0)
+    ln.BackgroundColor3 = Color3.fromRGB(165,20,20)
+    ln.BackgroundTransparency = 0.88
+    ln.BorderSizePixel = 0
+end
+
+-- Card principal
+local _KC = Instance.new("Frame", _KBG)
+_KC.Size = UDim2.new(0,480,0,390)
+_KC.Position = UDim2.new(0.5,-240,0.5,-195)
+_KC.BackgroundColor3 = Color3.fromRGB(10,10,14)
+_KC.BorderSizePixel = 0
+Instance.new("UICorner", _KC).CornerRadius = UDim.new(0,10)
+local _KCardStroke = Instance.new("UIStroke", _KC)
+_KCardStroke.Color = Color3.fromRGB(165,20,20)
+_KCardStroke.Thickness = 1.5
+
+-- Topo escuro
+local _KTop = Instance.new("Frame", _KC)
+_KTop.Size = UDim2.new(1,0,0,50)
+_KTop.BackgroundColor3 = Color3.fromRGB(14,4,4)
+_KTop.BorderSizePixel = 0
+Instance.new("UICorner", _KTop).CornerRadius = UDim.new(0,10)
+local _KTopFix = Instance.new("Frame", _KTop)
+_KTopFix.Size = UDim2.new(1,0,0.5,0)
+_KTopFix.Position = UDim2.new(0,0,0.5,0)
+_KTopFix.BackgroundColor3 = Color3.fromRGB(14,4,4)
+_KTopFix.BorderSizePixel = 0
+
+local function KLbl(parent,text,sz,col,x,y,w,h,font,xalign)
+    local l = Instance.new("TextLabel", parent)
+    l.Text = text
+    l.Size = UDim2.new(w or 1,0,0,h or 20)
+    l.Position = UDim2.new(x or 0,0,0,y)
+    l.BackgroundTransparency = 1
+    l.TextColor3 = col
+    l.Font = font or Enum.Font.Gotham
+    l.TextSize = sz
+    l.TextXAlignment = xalign or Enum.TextXAlignment.Center
+    l.TextWrapped = true
+    return l
+end
+
+-- Logo no topo
+KLbl(_KTop,"◈  223HUB",20,Color3.fromRGB(255,255,255),0,0,1,50,Enum.Font.GothamBold)
+
+-- Separador topo
+local _KSep = Instance.new("Frame",_KC); _KSep.Size=UDim2.new(1,0,0,1); _KSep.Position=UDim2.new(0,0,0,50); _KSep.BackgroundColor3=Color3.fromRGB(165,20,20); _KSep.BorderSizePixel=0
+
+-- Ícone
+KLbl(_KC,"🔐",38,Color3.fromRGB(255,255,255),0,62,1,44,Enum.Font.GothamBold)
+
+-- Título
+KLbl(_KC,"VERIFICAÇÃO DE ACESSO",13,Color3.fromRGB(165,20,20),0,110,1,18,Enum.Font.GothamBold)
+
+-- Subtítulo
+KLbl(_KC,"Insira sua key para acessar o 223HUB v11",11,Color3.fromRGB(80,80,95),0,130,1,16)
+
+-- Badges dos tipos de key
+local _KBadgeRow = Instance.new("Frame",_KC)
+_KBadgeRow.Size = UDim2.new(1,-40,0,26)
+_KBadgeRow.Position = UDim2.new(0,20,0,152)
+_KBadgeRow.BackgroundTransparency = 1
+local _KBadgeLayout = Instance.new("UIListLayout",_KBadgeRow)
+_KBadgeLayout.FillDirection = Enum.FillDirection.Horizontal
+_KBadgeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+_KBadgeLayout.Padding = UDim.new(0,6)
+
+local badgeTypes = {
+    {label="DIÁRIA",   col=Color3.fromRGB(200,130,20)},
+    {label="SEMANAL",  col=Color3.fromRGB(50,140,210)},
+    {label="MENSAL",   col=Color3.fromRGB(115,28,195)},
+    {label="PERMANENTE",col=Color3.fromRGB(30,160,70)},
+}
+for _, b in ipairs(badgeTypes) do
+    local badge = Instance.new("TextLabel",_KBadgeRow)
+    badge.Text = b.label
+    badge.Size = UDim2.new(0,0,1,0)
+    badge.AutomaticSize = Enum.AutomaticSize.X
+    badge.BackgroundColor3 = b.col
+    badge.BackgroundTransparency = 0.7
+    badge.TextColor3 = b.col
+    badge.Font = Enum.Font.GothamBold
+    badge.TextSize = 9
+    badge.BorderSizePixel = 0
+    Instance.new("UICorner",badge).CornerRadius = UDim.new(0,4)
+    local pad = Instance.new("UIPadding",badge)
+    pad.PaddingLeft=UDim.new(0,6); pad.PaddingRight=UDim.new(0,6)
+end
+
+-- Campo de input
+local _KInputWrap = Instance.new("Frame",_KC)
+_KInputWrap.Size = UDim2.new(1,-40,0,42)
+_KInputWrap.Position = UDim2.new(0,20,0,186)
+_KInputWrap.BackgroundColor3 = Color3.fromRGB(16,16,20)
+_KInputWrap.BorderSizePixel = 0
+Instance.new("UICorner",_KInputWrap).CornerRadius = UDim.new(0,6)
+local _KInputStroke = Instance.new("UIStroke",_KInputWrap)
+_KInputStroke.Color = Color3.fromRGB(38,38,48)
+_KInputStroke.Thickness = 1
+
+local _KInput = Instance.new("TextBox",_KInputWrap)
+_KInput.Size = UDim2.new(1,-46,1,0)
+_KInput.Position = UDim2.new(0,10,0,0)
+_KInput.BackgroundTransparency = 1
+_KInput.PlaceholderText = "Ex: 223-P-CODIGO / 223-D-CODIGO"
+_KInput.PlaceholderColor3 = Color3.fromRGB(55,55,68)
+_KInput.Text = ""
+_KInput.TextColor3 = Color3.fromRGB(210,210,215)
+_KInput.Font = Enum.Font.Code
+_KInput.TextSize = 13
+_KInput.ClearTextOnFocus = false
+
+-- Botão limpar campo
+local _KClearBtn = Instance.new("TextButton",_KInputWrap)
+_KClearBtn.Size = UDim2.new(0,32,0,30)
+_KClearBtn.Position = UDim2.new(1,-36,0,6)
+_KClearBtn.BackgroundColor3 = Color3.fromRGB(28,28,34)
+_KClearBtn.TextColor3 = Color3.fromRGB(100,100,115)
+_KClearBtn.Font = Enum.Font.GothamBold
+_KClearBtn.TextSize = 12
+_KClearBtn.Text = "✕"
+_KClearBtn.BorderSizePixel = 0
+Instance.new("UICorner",_KClearBtn).CornerRadius = UDim.new(0,4)
+_KClearBtn.MouseButton1Click:Connect(function() _KInput.Text="" end)
+
+-- Status (erro/sucesso/info)
+local _KStatus = Instance.new("TextLabel",_KC)
+_KStatus.Size = UDim2.new(1,-40,0,32)
+_KStatus.Position = UDim2.new(0,20,0,234)
+_KStatus.BackgroundTransparency = 1
+_KStatus.Text = ""
+_KStatus.TextColor3 = Color3.fromRGB(210,45,45)
+_KStatus.Font = Enum.Font.Gotham
+_KStatus.TextSize = 11
+_KStatus.TextXAlignment = Enum.TextXAlignment.Center
+_KStatus.TextWrapped = true
+
+-- Botão verificar
+local _KBtn = Instance.new("TextButton",_KC)
+_KBtn.Size = UDim2.new(1,-40,0,42)
+_KBtn.Position = UDim2.new(0,20,0,272)
+_KBtn.BackgroundColor3 = Color3.fromRGB(165,20,20)
+_KBtn.TextColor3 = Color3.fromRGB(255,255,255)
+_KBtn.Font = Enum.Font.GothamBold
+_KBtn.TextSize = 14
+_KBtn.Text = "VERIFICAR KEY"
+_KBtn.BorderSizePixel = 0
+Instance.new("UICorner",_KBtn).CornerRadius = UDim.new(0,6)
+_KBtn.MouseEnter:Connect(function() _KTween:Create(_KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(210,45,45)}):Play() end)
+_KBtn.MouseLeave:Connect(function() _KTween:Create(_KBtn,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(165,20,20)}):Play() end)
+
+-- Informação de key salva
+local _KSavedInfo = Instance.new("TextLabel",_KC)
+_KSavedInfo.Size = UDim2.new(1,-40,0,14)
+_KSavedInfo.Position = UDim2.new(0,20,0,320)
+_KSavedInfo.BackgroundTransparency = 1
+_KSavedInfo.Text = ""
+_KSavedInfo.TextColor3 = Color3.fromRGB(50,180,75)
+_KSavedInfo.Font = Enum.Font.Gotham
+_KSavedInfo.TextSize = 10
+_KSavedInfo.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Timer de expiração (aparece após validação bem-sucedida)
+local _KTimerLabel = Instance.new("TextLabel",_KC)
+_KTimerLabel.Size = UDim2.new(1,-40,0,14)
+_KTimerLabel.Position = UDim2.new(0,20,0,337)
+_KTimerLabel.BackgroundTransparency = 1
+_KTimerLabel.Text = ""
+_KTimerLabel.TextColor3 = Color3.fromRGB(90,90,105)
+_KTimerLabel.Font = Enum.Font.Code
+_KTimerLabel.TextSize = 10
+_KTimerLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Rodapé
+KLbl(_KC,"DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP",9,Color3.fromRGB(45,45,58),0,357,1,14)
+
+-- Animação entrada
+_KC.BackgroundTransparency = 1
+_KC.Position = UDim2.new(0.5,-240,0.58,-195)
+for _,v in ipairs(_KC:GetDescendants()) do
+    if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then v.TextTransparency=1 end
+end
+_KTween:Create(_KC,TweenInfo.new(0.4,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
+    Position=UDim2.new(0.5,-240,0.5,-195), BackgroundTransparency=0
+}):Play()
+task.delay(0.2,function()
+    for _,v in ipairs(_KC:GetDescendants()) do
+        if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+            _KTween:Create(v,TweenInfo.new(0.3),{TextTransparency=0}):Play()
+        end
+    end
+end)
+
+-- ── Lógica Principal ──────────────────────────────────────
+local _keyVerified = false
+
+local function SetStatus(msg, color)
+    _KStatus.Text  = msg
+    _KStatus.TextColor3 = color or Color3.fromRGB(210,45,45)
+end
+
+local function AnimateSuccess(timerText, callback)
+    _KCardStroke.Color = Color3.fromRGB(30,160,70)
+    _KBtn.BackgroundColor3 = Color3.fromRGB(25,130,55)
+    _KBtn.Text = "✓  ACESSO CONCEDIDO"
+    _KTimerLabel.Text = timerText or ""
+    task.delay(0.9, function()
+        _KTween:Create(_KBG, TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+        _KTween:Create(_KC,  TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+        for _,v in ipairs(_KC:GetDescendants()) do
+            if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+                _KTween:Create(v,TweenInfo.new(0.25),{TextTransparency=1}):Play()
+            end
+        end
+        task.delay(0.5, function()
+            if _KSG and _KSG.Parent then _KSG:Destroy() end
+            callback()
+        end)
+    end)
+end
+
+-- Shake de erro no card
+local function ShakeCard()
+    local origin = UDim2.new(0.5,-240,0.5,-195)
+    local offsets = {-6,6,-4,4,-2,0}
+    local function step(i)
+        if i > #offsets then return end
+        _KTween:Create(_KC,TweenInfo.new(0.04),{Position=UDim2.new(0.5,-240+offsets[i],0.5,-195)}):Play()
+        task.delay(0.04, function() step(i+1) end)
+    end
+    step(1)
+end
+
+local function TryKey(key, savedActivatedAt)
+    local normKey = NormalizeKey(key or "")
+    if normKey == "" then SetStatus("❌ Digite uma key antes de verificar."); return end
+
+    _KBtn.Text = "⏳ Verificando..."
+    _KBtn.Active = false
+    _KInputStroke.Color = Color3.fromRGB(38,38,48)
+    SetStatus("", Color3.fromRGB(90,90,105))
+
+    task.spawn(function()
+        local ok, msg, ktype, activatedAt = CheckKey(normKey, savedActivatedAt)
+        _KBtn.Active = true
+        _KBtn.Text = "VERIFICAR KEY"
+
+        if ok then
+            _keyVerified = true
+            -- Salva localmente se ainda não estava salvo
+            local saveTime = activatedAt or savedActivatedAt or os.time()
+            if ktype ~= "P" then
+                SaveKeyData(normKey, saveTime)
+                _KSavedInfo.Text = "✓ Key salva localmente"
+            end
+            SetStatus("✓ "..msg, Color3.fromRGB(30,160,70))
+            AnimateSuccess(msg, function()
+                _keyVerified = true
+            end)
+        else
+            -- Key inválida ou expirada
+            if msg:find("expirada") then
+                ClearKeyData()  -- limpa save para forçar nova key
+            end
+            _KInputStroke.Color = Color3.fromRGB(165,20,20)
+            SetStatus("❌ "..msg, Color3.fromRGB(210,45,45))
+            ShakeCard()
+        end
+    end)
+end
+
+_KBtn.MouseButton1Click:Connect(function() TryKey(_KInput.Text, nil) end)
+_KInput.FocusLost:Connect(function(enter)
+    if enter then TryKey(_KInput.Text, nil) end
+end)
+
+-- Tenta carregar key salva automaticamente
+local _savedData = LoadKeyData()
+if _savedData and _savedData.key and _savedData.key ~= "" then
+    _KInput.Text = _savedData.key
+    local ktype = GetKeyType(_savedData.key)
+    local label = ktype and (KEY_LABEL[ktype] or ktype) or "?"
+    _KSavedInfo.Text = "🔒 Key "..label.." salva encontrada, verificando..."
+    task.delay(0.7, function()
+        TryKey(_savedData.key, _savedData.activated_at)
+    end)
+end
+
+-- Aguarda verificação — script trava aqui até key ser válida
+repeat task.wait(0.05) until _keyVerified
+task.wait(1.1)  -- aguarda animação de saída
+
+-- ============================================================
+-- FIM DO SISTEMA DE KEY — script principal 223HUB v11 abaixo
+-- ============================================================
 
 local Players         = game:GetService("Players")
 local RunService      = game:GetService("RunService")
@@ -375,31 +864,31 @@ local function MakeESP(p)
     local d={}
 
     -- ESP (com wallcheck)
-    d.Box    = ND("Square",{Filled=false, Color=Cfg.ESP.BoxColor,    Transparency=0.7,    Thickness=1.5, Visible=false})
+    d.Box    = ND("Square",{Filled=false, Color=Cfg.ESP.BoxColor,    Transparency=0,    Thickness=1.5, Visible=false})
     d.Fill   = ND("Square",{Filled=true,  Color=Cfg.ESP.FillColor,   Transparency=0.7,  Thickness=0,   Visible=false})
     d.Name   = ND("Text",  {Size=14, Color=Cfg.ESP.NameColor,  Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
     d.Dist   = ND("Text",  {Size=12, Color=Cfg.ESP.DistColor,  Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
     -- Health bar: fundo + preenchimento + texto
-    d.HPBg   = ND("Square",{Filled=true,  Color=Cfg.ESP.HPBgColor,   Transparency=1,    Thickness=0,   Visible=false})
-    d.HPBar  = ND("Square",{Filled=true,  Color=Color3.fromRGB(0,220,80), Transparency=1, Thickness=0,  Visible=false})
+    d.HPBg   = ND("Square",{Filled=true,  Color=Cfg.ESP.HPBgColor,   Transparency=0,    Thickness=0,   Visible=false})
+    d.HPBar  = ND("Square",{Filled=true,  Color=Color3.fromRGB(0,220,80), Transparency=0, Thickness=0,  Visible=false})
     -- Tracer
-    d.Tracer = ND("Line",  {Thickness=1.5, Color=Cfg.ESP.TracerColor, Transparency=1,   Visible=false})
+    d.Tracer = ND("Line",  {Thickness=1.5, Color=Cfg.ESP.TracerColor, Transparency=0,   Visible=false})
     -- Tool
     d.Tool   = ND("Text",  {Size=12, Color=Cfg.ESP.ToolColor,  Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
 
     -- Xray (sem wallcheck)
-    d.XBox   = ND("Square",{Filled=false, Color=Cfg.Xray.BoxColor,   Transparency=0.7,    Thickness=1.5, Visible=false})
+    d.XBox   = ND("Square",{Filled=false, Color=Cfg.Xray.BoxColor,   Transparency=0,    Thickness=1.5, Visible=false})
     d.XFill  = ND("Square",{Filled=true,  Color=Cfg.Xray.FillColor,  Transparency=0.7,  Thickness=0,   Visible=false})
     d.XName  = ND("Text",  {Size=14, Color=Cfg.Xray.NameColor, Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
     d.XDist  = ND("Text",  {Size=12, Color=Cfg.Xray.DistColor, Outline=true, OutlineColor=Color3.new(0,0,0), Center=true, Visible=false})
-    d.XHPBg  = ND("Square",{Filled=true,  Color=Cfg.Xray.HPBgColor,  Transparency=0.7,    Thickness=0,   Visible=false})
-    d.XHPBar = ND("Square",{Filled=true,  Color=Cfg.Xray.HPColor,    Transparency=0.7,    Thickness=0,   Visible=false})
-    d.XTracer= ND("Line",  {Thickness=1.5, Color=Cfg.Xray.TracerColor,Transparency=0.7,   Visible=false})
+    d.XHPBg  = ND("Square",{Filled=true,  Color=Cfg.Xray.HPBgColor,  Transparency=0,    Thickness=0,   Visible=false})
+    d.XHPBar = ND("Square",{Filled=true,  Color=Cfg.Xray.HPColor,    Transparency=0,    Thickness=0,   Visible=false})
+    d.XTracer= ND("Line",  {Thickness=1.5, Color=Cfg.Xray.TracerColor,Transparency=0,   Visible=false})
 
     -- Skeleton: MAX_BONES lines, todas hidden por padrão
     d.Skel={}
     for i=1,MAX_BONES do
-        d.Skel[i] = ND("Line",{Thickness=1.2, Color=Cfg.Xray.SkelColor, Transparency=0.7, Visible=false})
+        d.Skel[i] = ND("Line",{Thickness=1.2, Color=Cfg.Xray.SkelColor, Transparency=0, Visible=false})
     end
 
     ESPO[p] = d
@@ -442,7 +931,7 @@ end
 local FOV_SEGS = 48
 local _fovLines = {}
 for i=1,FOV_SEGS do
-    local ln = ND("Line",{Thickness=1.5, Color=Color3.fromRGB(220,50,50), Transparency=0.7, Visible=false})
+    local ln = ND("Line",{Thickness=1.5, Color=Color3.fromRGB(220,50,50), Transparency=0, Visible=false})
     _fovLines[i] = ln
 end
 
