@@ -21,9 +21,11 @@ local _KLP      = game:GetService("Players").LocalPlayer
 local KEY_URL       = "https://pastebin.com/raw/zLBi64DJ"
 local KEY_SAVE_FILE = "223HUB_keydata.json"
 
--- Keys hardcoded 
-local VALID_KEYS_RAW = {    "223-P-BRUNO223",
-    "223-P-TY2025",}
+local VALID_KEYS_RAW = {
+    "223-P-BRUNO223",
+    "223-P-TY2025",
+}
+
 
 -- Durações por tipo (segundos)
 local KEY_DURATION = { D=86400, S=604800, M=2592000, P=math.huge }
