@@ -219,16 +219,108 @@ local function ShakeCard()
 end
 
 local function OnKeyApproved()
-    _KTween:Create(KBG,TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
-    _KTween:Create(KC, TweenInfo.new(0.4,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+    -- Fase 1: conteúdo some
     for _,v in ipairs(KC:GetDescendants()) do
         if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
-            _KTween:Create(v,TweenInfo.new(0.25),{TextTransparency=1}):Play()
+            _KTween:Create(v,TweenInfo.new(0.15),{TextTransparency=1}):Play()
         end
     end
-    task.delay(0.55,function()
-        if KSG and KSG.Parent then KSG:Destroy() end
-        task.spawn(_223HUB_MAIN)
+    -- Fase 2: card COMPACTA para barrinha fina no centro
+    task.delay(0.12,function()
+        _KTween:Create(KCStroke,TweenInfo.new(0.2),{Transparency=1}):Play()
+        _KTween:Create(KBG,TweenInfo.new(0.25),{BackgroundTransparency=1}):Play()
+        _KTween:Create(KC,TweenInfo.new(0.32,Enum.EasingStyle.Quart,Enum.EasingDirection.In),{
+            Size=UDim2.new(0,480,0,5),
+            Position=UDim2.new(0.5,-240,0.5,-2),
+            BackgroundColor3=Color3.fromRGB(165,20,20),
+        }):Play()
+    end)
+    -- Fase 3: barrinha EXPANDE para tela inteira
+    task.delay(0.52,function()
+        _KTween:Create(KC,TweenInfo.new(0.42,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
+            Size=UDim2.new(1,0,1,0),
+            Position=UDim2.new(0,0,0,0),
+            BackgroundColor3=Color3.fromRGB(7,7,10),
+        }):Play()
+    end)
+
+    -- Fase 4: loading screen dentro da tela expandida
+    task.delay(1.0,function()
+        -- limpa conteúdo do card
+        for _,v in ipairs(KC:GetDescendants()) do pcall(function() v:Destroy() end) end
+
+        -- Logo centralizado
+        local logoL=Instance.new("TextLabel",KC)
+        logoL.Text="◈  223HUB"; logoL.Size=UDim2.new(1,0,0,40)
+        logoL.Position=UDim2.new(0,0,0,180); logoL.BackgroundTransparency=1
+        logoL.TextColor3=Color3.fromRGB(165,20,20); logoL.Font=Enum.Font.GothamBold
+        logoL.TextSize=28; logoL.TextXAlignment=Enum.TextXAlignment.Center
+        logoL.TextTransparency=1
+        _KTween:Create(logoL,TweenInfo.new(0.35),{TextTransparency=0}):Play()
+
+        local subL=Instance.new("TextLabel",KC)
+        subL.Text="Inicializando..."; subL.Size=UDim2.new(1,0,0,18)
+        subL.Position=UDim2.new(0,0,0,226); subL.BackgroundTransparency=1
+        subL.TextColor3=Color3.fromRGB(90,90,100); subL.Font=Enum.Font.Gotham
+        subL.TextSize=12; subL.TextXAlignment=Enum.TextXAlignment.Center
+        subL.TextTransparency=1
+        _KTween:Create(subL,TweenInfo.new(0.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out,0,false,0.15),{TextTransparency=0}):Play()
+
+        -- Barra de progresso
+        local barBg=Instance.new("Frame",KC)
+        barBg.Size=UDim2.new(0,360,0,5); barBg.Position=UDim2.new(0.5,-180,0,260)
+        barBg.BackgroundColor3=Color3.fromRGB(26,26,31); barBg.BorderSizePixel=0
+        Instance.new("UICorner",barBg).CornerRadius=UDim.new(1,0)
+        barBg.BackgroundTransparency=1
+        _KTween:Create(barBg,TweenInfo.new(0.3),{BackgroundTransparency=0}):Play()
+
+        local barFill=Instance.new("Frame",barBg)
+        barFill.Size=UDim2.new(0,0,1,0); barFill.BackgroundColor3=Color3.fromRGB(165,20,20)
+        barFill.BorderSizePixel=0; Instance.new("UICorner",barFill).CornerRadius=UDim.new(1,0)
+
+        local pctL=Instance.new("TextLabel",KC)
+        pctL.Text="0%"; pctL.Size=UDim2.new(1,0,0,14)
+        pctL.Position=UDim2.new(0,0,0,270); pctL.BackgroundTransparency=1
+        pctL.TextColor3=Color3.fromRGB(60,60,70); pctL.Font=Enum.Font.Code
+        pctL.TextSize=10; pctL.TextXAlignment=Enum.TextXAlignment.Center
+
+        local STEPS={
+            {0.15,"Verificando assinatura..."},
+            {0.30,"Carregando ESP & Xray..."},
+            {0.48,"Carregando Aimbot..."},
+            {0.62,"Carregando Misc..."},
+            {0.78,"Carregando GUI..."},
+            {0.92,"Aplicando saves..."},
+            {1.00,"Bem-vindo, ".._KLP.Name.."!"},
+        }
+        local TOTAL = 2.8
+        task.spawn(function()
+            local st=tick()
+            while true do
+                local pr=math.min((tick()-st)/TOTAL,1)
+                _KTween:Create(barFill,TweenInfo.new(0.08),{Size=UDim2.new(pr,0,1,0)}):Play()
+                pctL.Text=math.floor(pr*100).."%"
+                for i=#STEPS,1,-1 do
+                    if pr>=STEPS[i][1]-0.01 then subL.Text=STEPS[i][2]; break end
+                end
+                if pr>=1 then break end
+                task.wait(0.03)
+            end
+            -- Fase 3: fade final e inicia o hub
+            task.wait(0.3)
+            _KTween:Create(KC,TweenInfo.new(0.5,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+            for _,v in ipairs(KC:GetDescendants()) do
+                if v:IsA("TextLabel") or v:IsA("Frame") then
+                    _KTween:Create(v,TweenInfo.new(0.35),
+                        v:IsA("TextLabel") and {TextTransparency=1} or {BackgroundTransparency=1}
+                    ):Play()
+                end
+            end
+            task.delay(0.55,function()
+                if KSG and KSG.Parent then KSG:Destroy() end
+                task.spawn(_223HUB_MAIN)
+            end)
+        end)
     end)
 end
 
@@ -333,38 +425,37 @@ local Cfg = {
     Aim = {
         Aimbot=false, WallCheck=false, TeamCheck=false,
         Prediction=false, PredStr=3,
-        NoRecoil=false, InfAmmo=false, FastReload=false,
+        NoRecoil=false, InfAmmo=false,
         FOV=150, ShowFOV=false, UseFOV=false, FOVFollow=false,
         AimPart="Head", Smoothness=8,
         AimKey=Enum.KeyCode.E, AimKeyName="E",
         AimStrength=70, Blacklist={},
     },
-    Trigger = { Enabled=false, TeamCheck=false, Delay=80, AutoBot=false },
+    Trigger = { Enabled=false, TeamCheck=false, Delay=80, AutoBot=false,
+                ClickControl=false, ClickCount=3 },
     Misc = {
         Fly=false, FlySpeed=50, FlyBoost=false, Noclip=false,
         Speed=false, WalkSpeed=25, AntiAFK=false,
         HitboxExtender=false, HitboxSize=8, HitboxPart="All",
         JumpMod=false, JumpPower=80, JumpMethod="JumpPower",
         InfJump=false, AntiRag=false, FreeCam=false, FCamSpeed=1,
-        BoomboxID="", DupeToolName="", ClickTp=false, SpinBot=false,
+        DupeToolName="", ClickTp=false, SpinBot=false,
         CrashLag=false, AutoJump=false, ThirdPerson=false, ThirdPersonDist=8,
         AlwaysSprint=false,
     },
     Modes  = { Aquaman=false, NoFallDmg=false },
-    Troll  = {
-        ChatSpam=false, SpamMsg="223HUB", SpamDelay=1,
-        Rainbow=false, RainbowSpeed=0.05, SoundID="",
-        SpinSpeed=10, Invisible=false, GiantScale=5, TinyScale=0.3,
-    },
+
     Settings = {
         ToggleKey=Enum.KeyCode.Semicolon, ToggleKeyName=";",
-        ESPKey=Enum.KeyCode.F2,     ESPKeyName="F2",
-        AimbotKey=Enum.KeyCode.F3,  AimbotKeyName="F3",
-        FlyKey=Enum.KeyCode.F5,     FlyKeyName="F5",
-        NoclipKey=Enum.KeyCode.F6,  NoclipKeyName="F6",
-        SpeedKey=Enum.KeyCode.F7,   SpeedKeyName="F7",
-        XrayKey=Enum.KeyCode.F8,    XrayKeyName="F8",
-        FreeCamKey=Enum.KeyCode.F9, FreeCamKeyName="F9",
+        ESPKey=Enum.KeyCode.F2,      ESPKeyName="F2",
+        AimbotKey=Enum.KeyCode.F3,   AimbotKeyName="F3",
+        FlyKey=Enum.KeyCode.F5,      FlyKeyName="F5",
+        NoclipKey=Enum.KeyCode.F6,   NoclipKeyName="F6",
+        SpeedKey=Enum.KeyCode.F7,    SpeedKeyName="F7",
+        XrayKey=Enum.KeyCode.F8,     XrayKeyName="F8",
+        FreeCamKey=Enum.KeyCode.F9,  FreeCamKeyName="F9",
+        BypassKey=Enum.KeyCode.F4,   BypassKeyName="F4",
+        BypassEnabled=false,
     },
 }
 
@@ -414,6 +505,7 @@ local function ApplySave(t)
     Cfg.Settings.SpeedKey=TK(Cfg.Settings.SpeedKeyName)
     Cfg.Settings.XrayKey=TK(Cfg.Settings.XrayKeyName)
     Cfg.Settings.FreeCamKey=TK(Cfg.Settings.FreeCamKeyName)
+    Cfg.Settings.BypassKey=TK(Cfg.Settings.BypassKeyName)
 end
 local function SaveCfg(name)
     if not writefile then return false,"writefile indisponível" end
@@ -508,38 +600,55 @@ local function GetHP(char)
 end
 
 -- ============================================================
--- OTIMIZAÇÃO 1: WallCheck com cache por frame
--- Evita múltiplos raycasts por frame para o mesmo player
+-- WALLCHECK OTIMIZADO
+-- RaycastParams com dirty-flag: só reconstrói se o char/myc mudou.
+-- Cache de partes separado para não realocar a lista a cada hit.
 -- ============================================================
-local function IsVisible(char)
-    local myc  = LP.Character
-    local mine = myc and myc:FindFirstChild("HumanoidRootPart")
-    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-    if not mine or not hrp then return false end
+local _rpCache = {}   -- [player] = { char, myc, rp, parts }
 
-    -- Cache do RaycastParams por personagem local (recria só quando char muda)
+local function _BuildRP(char, myc)
     local rp = RaycastParams.new()
     rp.FilterType = Enum.RaycastFilterType.Exclude
     local ex = {}
     for _,v in ipairs(myc:GetDescendants())  do if v:IsA("BasePart") then ex[#ex+1]=v end end
     for _,v in ipairs(char:GetDescendants()) do if v:IsA("BasePart") then ex[#ex+1]=v end end
     rp.FilterDescendantsInstances = ex
+    return rp
+end
 
+local function GetRaycastParams(player, char, myc)
+    local cached = _rpCache[player]
+    if cached and cached.char == char and cached.myc == myc then
+        return cached.rp
+    end
+    local rp = _BuildRP(char, myc)
+    _rpCache[player] = { char=char, myc=myc, rp=rp }
+    return rp
+end
+
+local function IsVisible(player, char)
+    local myc  = LP.Character
+    local mine = myc and myc:FindFirstChild("HumanoidRootPart")
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if not mine or not hrp then return false end
+    local rp = GetRaycastParams(player, char, myc)
     local res = Workspace:Raycast(mine.Position, hrp.Position - mine.Position, rp)
     return res == nil
 end
 
--- Cache de visibilidade: recalcula no máximo 1x por frame por player
-local _visResultCache = {}
-local _visFrameStamp  = 0
+-- Cache de visibilidade por frame: dois arrays paralelos evitam alocação de tabela
+local _visResultCache  = {}   -- [player] = bool
+local _visFrameCache   = {}   -- [player] = frameStamp
+local _visFrameStamp   = 0
 
 local function IsVisibleCached(player, char)
     local frame = _visFrameStamp
-    if _visResultCache[player] and _visResultCache[player].frame == frame then
-        return _visResultCache[player].result
+    if _visFrameCache[player] == frame then
+        return _visResultCache[player]
     end
-    local result = IsVisible(char)
-    _visResultCache[player] = { frame=frame, result=result }
+    local result = IsVisible(player, char)
+    _visResultCache[player] = result
+    _visFrameCache[player]  = frame
     return result
 end
 
@@ -567,8 +676,7 @@ local function GetHeldTool(char)
 end
 
 -- ============================================================
--- OTIMIZAÇÃO 3: ClosestTarget — usa cache de visibilidade
--- e calcula distância 2D apenas uma vez por player
+-- OTIMIZAÇÃO 2: ClosestTarget — usa cache de visibilidade
 -- ============================================================
 local function ClosestTarget()
     local vs     = Cam.ViewportSize
@@ -581,7 +689,6 @@ local function ClosestTarget()
         local part = c:FindFirstChild(Cfg.Aim.AimPart) or c:FindFirstChild("HumanoidRootPart")
         if not part then continue end
 
-        -- WallCheck usa cache para não duplicar raycast com o ESP
         if Cfg.Aim.WallCheck and not IsVisibleCached(p, c) then continue end
 
         local sp, onScreen = W2S(part.Position)
@@ -591,15 +698,6 @@ local function ClosestTarget()
         if d < bestD then bestD=d; best=p end
     end
     return best
-end
-
-local function GetPlayerByName(name)
-    if not name or name=="" then return nil end
-    local q=name:lower()
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p.Name:lower():find(q,1,true) or p.DisplayName:lower():find(q,1,true) then return p end
-    end
-    return nil
 end
 
 -- ============================================================
@@ -664,6 +762,8 @@ local function KillESP(p)
         end
     end
     _visResultCache[p] = nil
+    _visFrameCache[p]  = nil
+    _rpCache[p] = nil
     ESPO[p] = nil
 end
 
@@ -676,7 +776,7 @@ end
 
 -- ============================================================
 -- FOV CIRCLE
--- OTIMIZAÇÃO 4: só recalcula quando FOV, posição ou estado mudam
+-- OTIMIZAÇÃO: só recalcula quando FOV, posição ou estado mudam
 -- ============================================================
 local FOV_SEGS = 48
 local _fovLines = {}
@@ -690,6 +790,14 @@ local _fovLastCX  = -1
 local _fovLastCY  = -1
 local _fovLastVis = nil
 
+-- OTIMIZAÇÃO: pre-calcula ângulos do FOV uma única vez
+local _fovCos = {}
+local _fovSin = {}
+for i=1,FOV_SEGS do
+    _fovCos[i] = { math.cos((i-1)/FOV_SEGS * math.pi*2), math.cos(i/FOV_SEGS * math.pi*2) }
+    _fovSin[i] = { math.sin((i-1)/FOV_SEGS * math.pi*2), math.sin(i/FOV_SEGS * math.pi*2) }
+end
+
 local function UpdateFOVCircle()
     local show = Cfg.Aim.ShowFOV
     local cx, cy
@@ -702,7 +810,6 @@ local function UpdateFOVCircle()
     end
     local r = Cfg.Aim.FOV
 
-    -- Só atualiza se algo mudou
     if show == _fovLastVis and r == _fovLastR and math.abs(cx-_fovLastCX)<0.5 and math.abs(cy-_fovLastCY)<0.5 then
         return
     end
@@ -711,77 +818,158 @@ local function UpdateFOVCircle()
     for i=1, FOV_SEGS do
         local ln = _fovLines[i]
         if not ln then continue end
-        local a1 = (i-1)/FOV_SEGS * math.pi*2
-        local a2 = i    /FOV_SEGS * math.pi*2
         pcall(function()
-            ln.From    = Vector2.new(cx + math.cos(a1)*r, cy + math.sin(a1)*r)
-            ln.To      = Vector2.new(cx + math.cos(a2)*r, cy + math.sin(a2)*r)
+            ln.From    = Vector2.new(cx + _fovCos[i][1]*r, cy + _fovSin[i][1]*r)
+            ln.To      = Vector2.new(cx + _fovCos[i][2]*r, cy + _fovSin[i][2]*r)
             ln.Visible = show
         end)
     end
 end
 
 -- ============================================================
--- NO RECOIL / FAST RELOAD / INF AMMO
+-- NO RECOIL
 -- ============================================================
 local _nrConn=nil
 local function StartWeaponLoop()
     if _nrConn then return end
     _nrConn=AC(RunService.RenderStepped:Connect(function()
-        if not (Cfg.Aim.NoRecoil or Cfg.Aim.FastReload) then return end
+        if not Cfg.Aim.NoRecoil then return end
         local char=LP.Character; if not char then return end
         for _,tool in ipairs(char:GetChildren()) do
             if not tool:IsA("Tool") then continue end
             for _,v in ipairs(tool:GetDescendants()) do
                 local nm=v.Name:lower()
-                if Cfg.Aim.NoRecoil then
-                    if nm:find("recoil") or nm:find("kickback") or nm:find("kick") then
-                        pcall(function()
-                            if     v:IsA("Vector3Value") then v.Value=Vector3.zero
-                            elseif v:IsA("NumberValue")  then v.Value=0
-                            elseif v:IsA("CFrameValue")  then v.Value=CFrame.identity end
-                        end)
-                    end
-                end
-                if Cfg.Aim.FastReload then
-                    if nm:find("reload") or nm:find("delay") or nm:find("cooldown") or nm:find("firerate") then
-                        pcall(function()
-                            if v:IsA("NumberValue") and v.Value>0.05 then v.Value=0.01 end
-                        end)
-                    end
+                if nm:find("recoil",1,true) or nm:find("kickback",1,true) or nm:find("kick",1,true) then
+                    pcall(function()
+                        if     v:IsA("Vector3Value") then v.Value=Vector3.zero
+                        elseif v:IsA("NumberValue")  then v.Value=0
+                        elseif v:IsA("CFrameValue")  then v.Value=CFrame.identity end
+                    end)
                 end
             end
         end
     end))
 end
 
-local _iaConn=nil
-local function StartInfAmmo()
-    if _iaConn then return end
-    _iaConn=AC(RunService.Heartbeat:Connect(function()
-        if not Cfg.Aim.InfAmmo then return end
-        local char=LP.Character; if not char then return end
-        local bp=LP:FindFirstChild("Backpack")
-        for _,cont in ipairs(bp and {char,bp} or {char}) do
-            for _,tool in ipairs(cont:GetChildren()) do
-                if not tool:IsA("Tool") then continue end
-                for _,v in ipairs(tool:GetDescendants()) do
-                    local nm=v.Name:lower()
-                    if nm:find("ammo") or nm:find("clip") or nm:find("bullets") or nm:find("mag") or nm:find("reserve") then
-                        pcall(function()
-                            if (v:IsA("IntValue") or v:IsA("NumberValue")) and v.Value<9999 then v.Value=9999 end
-                        end)
-                    end
+-- ============================================================
+-- INFINITE AMMO MELHORADO
+-- Monitora mudanças via .Changed em vez de polling por frame.
+-- Reconnecta quando o personagem troca de ferramenta.
+-- ============================================================
+local _iaConns   = {}  -- [tool] = connection
+local _iaCharConn = nil
+local _iaBpConn   = nil
+
+local AMMO_KEYWORDS = {"ammo","clip","bullets","mag","reserve","rounds","count"}
+local function _IsAmmoValue(v)
+    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
+    local nm = v.Name:lower()
+    for _,kw in ipairs(AMMO_KEYWORDS) do
+        if nm:find(kw,1,true) then return true end
+    end
+    return false
+end
+
+local function _HookTool(tool)
+    if _iaConns[tool] then return end
+    local conns = {}
+    for _,v in ipairs(tool:GetDescendants()) do
+        if _IsAmmoValue(v) then
+            -- define logo e escuta mudanças
+            pcall(function() if v.Value < 9999 then v.Value = 9999 end end)
+            local c = v.Changed:Connect(function(val)
+                if Cfg.Aim.InfAmmo and val < 9999 then
+                    pcall(function() v.Value = 9999 end)
                 end
-            end
+            end)
+            conns[#conns+1] = c
         end
+    end
+    -- também observa descendentes futuros (alguns jogos adicionam valores depois)
+    local dc = tool.DescendantAdded:Connect(function(v)
+        if not Cfg.Aim.InfAmmo then return end
+        if _IsAmmoValue(v) then
+            pcall(function() if v.Value < 9999 then v.Value = 9999 end end)
+            local c = v.Changed:Connect(function(val)
+                if Cfg.Aim.InfAmmo and val < 9999 then
+                    pcall(function() v.Value = 9999 end)
+                end
+            end)
+            conns[#conns+1] = c
+        end
+    end)
+    conns[#conns+1] = dc
+    _iaConns[tool] = conns
+end
+
+local function _UnhookTool(tool)
+    local conns = _iaConns[tool]
+    if not conns then return end
+    for _,c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+    _iaConns[tool] = nil
+end
+
+local function _HookChar(char)
+    -- limpa hooks antigos
+    for tool in pairs(_iaConns) do _UnhookTool(tool) end
+    if not char then return end
+    local bp = LP:FindFirstChild("Backpack")
+    -- hookea tools no char e na mochila
+    local function hookContainer(cont)
+        if not cont then return end
+        for _,v in ipairs(cont:GetChildren()) do
+            if v:IsA("Tool") then _HookTool(v) end
+        end
+    end
+    hookContainer(char)
+    hookContainer(bp)
+    -- observa novas tools sendo equipadas/desequipadas
+    if _iaCharConn then pcall(function() _iaCharConn:Disconnect() end) end
+    _iaCharConn = char.ChildAdded:Connect(function(v)
+        if v:IsA("Tool") and Cfg.Aim.InfAmmo then _HookTool(v) end
+    end)
+    if _iaBpConn then pcall(function() _iaBpConn:Disconnect() end) end
+    if bp then
+        _iaBpConn = bp.ChildAdded:Connect(function(v)
+            if v:IsA("Tool") and Cfg.Aim.InfAmmo then _HookTool(v) end
+        end)
+    end
+end
+
+local function StartInfAmmo()
+    -- conecta ao CharacterAdded para refazer hooks ao respawnar
+    AC(LP.CharacterAdded:Connect(function(c)
+        task.wait(0.5)
+        if Cfg.Aim.InfAmmo then _HookChar(c) end
     end))
+    -- aplica no char atual se já existir
+    if LP.Character and Cfg.Aim.InfAmmo then
+        _HookChar(LP.Character)
+    end
 end
 
 -- ============================================================
 -- TRIGGERBOT
+-- ClickControl: quando ativado, dispara N clicks ao detectar alvo
 -- ============================================================
-local _tbLast=0
+local _tbLast    = 0
+local _tbFiring  = false  -- evita disparos sobrepostos
+
+local function _DoClicks(n)
+    if _tbFiring then return end
+    _tbFiring = true
+    task.spawn(function()
+        local vms = game:GetService("VirtualInputManager")
+        for i = 1, math.max(1, n) do
+            pcall(function() vms:SendMouseButtonEvent(0,0,0,true,game,0) end)
+            task.wait(0.05)
+            pcall(function() vms:SendMouseButtonEvent(0,0,0,false,game,0) end)
+            if i < n then task.wait(0.04) end
+        end
+        _tbFiring = false
+    end)
+end
+
 AC(RunService.Heartbeat:Connect(function()
     if not Cfg.Trigger.Enabled then return end
     if tick()-_tbLast < Cfg.Trigger.Delay/1000 then return end
@@ -791,10 +979,8 @@ AC(RunService.Heartbeat:Connect(function()
     if not IsValidTarget(p) then return end
     if Cfg.Trigger.TeamCheck and SameTeam(p) then return end
     _tbLast=tick()
-    local vms=game:GetService("VirtualInputManager")
-    pcall(function() vms:SendMouseButtonEvent(0,0,0,true,game,0) end)
-    task.wait(0.05)
-    pcall(function() vms:SendMouseButtonEvent(0,0,0,false,game,0) end)
+    local clicks = (Cfg.Trigger.ClickControl and Cfg.Trigger.ClickCount) or 1
+    _DoClicks(clicks)
 end))
 
 -- ============================================================
@@ -906,6 +1092,7 @@ end))
 
 -- ============================================================
 -- HITBOX EXTENDER
+-- OTIMIZAÇÃO: reutiliza tabela pset em vez de criar por chamada
 -- ============================================================
 local _hbConns={}
 local HBP={
@@ -915,13 +1102,21 @@ local HBP={
     Legs ={"Left Leg","Right Leg","LeftUpperLeg","RightUpperLeg","LeftLowerLeg","RightLowerLeg","LeftFoot","RightFoot"},
     HRP  ={"HumanoidRootPart"},
 }
+-- Pré-converte HBP para sets, evita rebuild por chamada
+local HBP_SETS = {}
+for k, names in pairs(HBP) do
+    local s = {}
+    for _,n in ipairs(names) do s[n]=true end
+    HBP_SETS[k] = s
+end
+
 local function ApplyHBChar(char)
     if not Cfg.Misc.HitboxExtender then return end
-    local pset={}
-    for _,n in ipairs(HBP[Cfg.Misc.HitboxPart] or HBP["All"]) do pset[n]=true end
+    local pset = HBP_SETS[Cfg.Misc.HitboxPart] or HBP_SETS["All"]
+    local sz   = Cfg.Misc.HitboxSize
     for _,v in ipairs(char:GetDescendants()) do
         if v:IsA("BasePart") and pset[v.Name] then
-            v.Size=Vector3.new(Cfg.Misc.HitboxSize,Cfg.Misc.HitboxSize,Cfg.Misc.HitboxSize)
+            v.Size=Vector3.new(sz,sz,sz)
             v.LocalTransparencyModifier=0.8
         end
     end
@@ -1010,7 +1205,7 @@ local function EnableAquaman()
             end
         end
         for _,v in ipairs(char:GetDescendants()) do
-            if v:IsA("Script") and (v.Name:lower():find("drown") or v.Name:lower():find("oxygen")) then
+            if v:IsA("Script") and (v.Name:lower():find("drown",1,true) or v.Name:lower():find("oxygen",1,true)) then
                 pcall(function() v.Disabled=true end)
             end
         end
@@ -1035,19 +1230,8 @@ local function EnableNoFallDmg()
 end
 
 -- ============================================================
--- BOOMBOX / CLICK TP / TOOLS / SERVER
+-- CLICK TP / TOOLS / SERVER
 -- ============================================================
-local _boom=nil
-local function PlayBoom(id)
-    if _boom then pcall(function() _boom:Destroy() end); _boom=nil end
-    if not id or id=="" then return end
-    _boom=Instance.new("Sound"); _boom.SoundId="rbxassetid://"..id:gsub("%D","")
-    _boom.Volume=1; _boom.Looped=true; _boom.Name="_223Boom"; _boom.Parent=Workspace; _boom:Play()
-end
-local function StopBoom()
-    if _boom then pcall(function() _boom:Stop(); _boom:Destroy() end); _boom=nil end
-end
-
 local _ctConn=nil
 local function StartClickTp()
     if _ctConn then return end
@@ -1118,94 +1302,20 @@ local function StartChatLog()
     Players.PlayerAdded:Connect(hookP)
 end
 
--- ============================================================
--- TROLL
--- ============================================================
-local _spinBG=nil
-local function TrollSpin(on)
-    if _spinBG then pcall(function() _spinBG:Destroy() end); _spinBG=nil end
-    if not on then return end
-    local char=LP.Character; if not char then return end
-    local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-    _spinBG=Instance.new("BodyAngularVelocity",hrp)
-    _spinBG.AngularVelocity=Vector3.new(0,Cfg.Troll.SpinSpeed*10,0)
-    _spinBG.MaxTorque=Vector3.new(0,1e7,0); _spinBG.P=1e6
-end
-local function TrollInvis(on)
-    local char=LP.Character; if not char then return end
-    for _,p in ipairs(char:GetDescendants()) do
-        if p:IsA("BasePart") or p:IsA("Decal") then
-            pcall(function() p.LocalTransparencyModifier=on and 1 or 0 end)
-        end
-    end
-end
-local function TrollScale(sv)
-    local char=LP.Character; if not char then return end
-    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    local ok,desc=pcall(function() return hum:GetAppliedDescription() end)
-    if not ok or not desc then desc=Instance.new("HumanoidDescription") end
-    desc.HeightScale=sv; desc.WidthScale=sv; desc.DepthScale=sv; desc.HeadScale=sv
-    desc.ProportionScale=1; desc.BodyTypeScale=0
-    pcall(function() hum:ApplyDescription(desc) end)
-end
-local _rainThread=nil
-local function EnableRainbow(on)
-    if _rainThread then task.cancel(_rainThread); _rainThread=nil end
-    if not on then return end
-    local hue=0
-    _rainThread=task.spawn(function()
-        while Cfg.Troll.Rainbow do
-            hue=(hue+Cfg.Troll.RainbowSpeed)%1
-            local col=Color3.fromHSV(hue,1,1)
-            local char=LP.Character
-            if char then for _,p in ipairs(char:GetDescendants()) do if p:IsA("BasePart") then pcall(function() p.Color=col end) end end end
-            task.wait(0.05)
-        end
-    end)
-end
-local _spamThread=nil
-local function StartSpam()
-    if _spamThread then return end
-    _spamThread=task.spawn(function()
-        while Cfg.Troll.ChatSpam do
-            pcall(function()
-                local rs=game:GetService("ReplicatedStorage")
-                local ev=rs:FindFirstChild("DefaultChatSystemChatEvents")
-                if ev then local req=ev:FindFirstChild("SayMessageRequest"); if req then req:FireServer(Cfg.Troll.SpamMsg,"All") end end
-            end)
-            pcall(function()
-                local tcs=game:GetService("TextChatService")
-                local chans=tcs:FindFirstChild("TextChannels")
-                if chans then local ch=chans:FindFirstChild("RBXGeneral"); if ch then ch:SendAsync(Cfg.Troll.SpamMsg) end end
-            end)
-            task.wait(math.max(0.5,Cfg.Troll.SpamDelay))
-        end
-        _spamThread=nil
-    end)
-end
-local function StopSpam() Cfg.Troll.ChatSpam=false end
-local _sndSpam=nil
-local function StartSoundSpam(id)
-    if _sndSpam then pcall(function() _sndSpam:Destroy() end); _sndSpam=nil end
-    if not id or id=="" then return end
-    _sndSpam=Instance.new("Sound"); _sndSpam.SoundId="rbxassetid://"..id:gsub("%D","")
-    _sndSpam.Volume=5; _sndSpam.Looped=true; _sndSpam.Parent=Workspace; _sndSpam:Play()
-end
-local function StopSoundSpam()
-    if _sndSpam then pcall(function() _sndSpam:Stop(); _sndSpam:Destroy() end); _sndSpam=nil end
-end
+
 
 -- ============================================================
 -- RENDER LOOP PRINCIPAL
--- OTIMIZAÇÃO 5: GetBounds calculado UMA vez e reaproveitado
--- por ESP e Xray; cache de visibilidade atualizado aqui
+-- OTIMIZAÇÃO: GetBounds calculado UMA vez e reaproveitado;
+-- cache de visibilidade; CFrame aimbot pré-calculado
 -- ============================================================
+
 AC(RunService.RenderStepped:Connect(function()
     local vs  = Cam.ViewportSize
     local cx  = vs.X/2
     local cy  = vs.Y/2
 
-    -- Incrementa stamp do frame para o cache de visibilidade
+    -- Incrementa stamp do frame para cache de visibilidade
     _visFrameStamp = _visFrameStamp + 1
 
     UpdateFOVCircle()
@@ -1250,6 +1360,11 @@ AC(RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- OTIMIZAÇÃO: early-exit se nem ESP nem Xray estão ativos
+    if not Cfg.ESP.Enabled and not Cfg.Xray.Enabled then return end
+
+    local vsY = vs.Y
+
     -- ── ESP / XRAY LOOP ──
     for player, d in pairs(ESPO) do
         if not player or not player.Parent then KillESP(player); continue end
@@ -1265,7 +1380,7 @@ AC(RunService.RenderStepped:Connect(function()
         -- OTIMIZAÇÃO: GetBounds calculado UMA vez e compartilhado entre ESP e Xray
         local bx, by, bw, bh = GetBounds(c)
 
-        -- Visibilidade calculada UMA vez via cache (usada por ESP e Aimbot)
+        -- Visibilidade calculada UMA vez via cache
         local visible = (not Cfg.ESP.WallCheck) or IsVisibleCached(player, c)
 
         -- ── ESP NORMAL ──
@@ -1307,7 +1422,7 @@ AC(RunService.RenderStepped:Connect(function()
             else SafeHide(d.HPBg); SafeHide(d.HPBar) end
 
             if Cfg.ESP.Tracers and d.Tracer then
-                SafeSet(d.Tracer,{From=Vector2.new(cx,vs.Y),To=Vector2.new(x+w/2,y+h),Color=Cfg.ESP.TracerColor,Transparency=0.7,Visible=true})
+                SafeSet(d.Tracer,{From=Vector2.new(cx,vsY),To=Vector2.new(x+w/2,y+h),Color=Cfg.ESP.TracerColor,Transparency=0.7,Visible=true})
             else SafeHide(d.Tracer) end
 
             if Cfg.ESP.HeldTool and d.Tool then
@@ -1355,7 +1470,7 @@ AC(RunService.RenderStepped:Connect(function()
             else SafeHide(d.XHPBg); SafeHide(d.XHPBar) end
 
             if Cfg.Xray.Tracers and d.XTracer then
-                SafeSet(d.XTracer,{From=Vector2.new(cx,vs.Y),To=Vector2.new(x+w/2,y+h),Color=Cfg.Xray.TracerColor,Transparency=0.7,Visible=true})
+                SafeSet(d.XTracer,{From=Vector2.new(cx,vsY),To=Vector2.new(x+w/2,y+h),Color=Cfg.Xray.TracerColor,Transparency=0.7,Visible=true})
             else SafeHide(d.XTracer) end
 
             if Cfg.Xray.Skeleton then
@@ -1408,6 +1523,41 @@ StartWeaponLoop(); StartInfAmmo(); StartClickTp(); StartChatLog()
 EnableAquaman(); EnableNoFallDmg()
 
 -- ============================================================
+-- TELAGEM BYPASS (Panic Key)
+-- Esconde/mostra a GUI completa + drawings do ESP/FOV.
+-- Quando ativo: GUI some, ESP drawings ficam invisíveis,
+-- o jogo parece completamente limpo para quem está vendo a tela.
+-- ============================================================
+local _bypassActive  = false
+local _bypassEspSave = {}   -- salva estado anterior do ESP/Xray ao ativar
+
+local function ApplyBypass(on)
+    -- GUI principal
+    if Win then Win.Visible = not on end
+
+    -- ESP / Xray drawings
+    if on then
+        -- salva estados e esconde tudo
+        _bypassEspSave.esp  = Cfg.ESP.Enabled
+        _bypassEspSave.xray = Cfg.Xray.Enabled
+        _bypassEspSave.fov  = Cfg.Aim.ShowFOV
+        Cfg.ESP.Enabled   = false
+        Cfg.Xray.Enabled  = false
+        Cfg.Aim.ShowFOV   = false
+        _fovLastVis = nil   -- força update do círculo FOV
+        -- esconde todos os drawings imediatamente
+        for _, d in pairs(ESPO) do HideESP(d) end
+        for _, ln in ipairs(_fovLines) do SafeHide(ln) end
+    else
+        -- restaura estados anteriores
+        Cfg.ESP.Enabled  = _bypassEspSave.esp  or false
+        Cfg.Xray.Enabled = _bypassEspSave.xray or false
+        Cfg.Aim.ShowFOV  = _bypassEspSave.fov  or false
+        _fovLastVis = nil
+    end
+end
+
+-- ============================================================
 -- KEYBINDS
 -- ============================================================
 local _guiVisible=true
@@ -1426,6 +1576,9 @@ AC(UIS.InputBegan:Connect(function(inp,gp)
     elseif kc==Cfg.Settings.SpeedKey   then Cfg.Misc.Speed=not Cfg.Misc.Speed; ApplySpeed(); TR("Speed")
     elseif kc==Cfg.Settings.XrayKey    then Cfg.Xray.Enabled=not Cfg.Xray.Enabled; TR("Xray")
     elseif kc==Cfg.Settings.FreeCamKey then Cfg.Misc.FreeCam=not Cfg.Misc.FreeCam; if Cfg.Misc.FreeCam then EnableFreeCam() else DisableFreeCam() end; TR("FC")
+    elseif kc==Cfg.Settings.BypassKey and Cfg.Settings.BypassEnabled then
+        _bypassActive = not _bypassActive
+        ApplyBypass(_bypassActive)
     end
 end))
 
@@ -1679,8 +1832,8 @@ local function MakeTab(name,order,col)
 end
 
 local PMain=MakeTab("Main",1); local PVis=MakeTab("Visuals",2); local PXray=MakeTab("Xray",3,C.blueH)
-local PMisc=MakeTab("Misc",4); local PModes=MakeTab("Modos",5,C.tealH); local PTroll=MakeTab("Troll",6,C.purpleH)
-local PSettings=MakeTab("Settings",7)
+local PMisc=MakeTab("Misc",4); local PModes=MakeTab("Modos",5,C.tealH)
+local PSettings=MakeTab("Settings",6)
 _pages["Main"].btn.TextColor3=C.wht; _pages["Main"].ul.Visible=true; _pages["Main"].pg.Visible=true; _curTab="Main"
 
 local AimP=Panel(PMain,"Aimbot",0,0,435,468); local FovP=Panel(PMain,"FOV Circle",443,0,435,215); local TrgP=Panel(PMain,"TriggerBot",443,223,435,185)
@@ -1697,10 +1850,14 @@ Slider(AimP,"Força do Aimbot (%)",1,100,70,15,function(v) Cfg.Aim.AimStrength=v
 do local f=Instance.new("Frame",AimP); f.Size=UDim2.new(1,0,0,12); f.BackgroundTransparency=1; f.LayoutOrder=17; local l=Instance.new("TextLabel",f); l.Text="  ↑ 100=lock total · 1=assistência leve"; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextXAlignment=Enum.TextXAlignment.Left end
 Sep(AimP,18); SL(AimP,"AUXÍLIOS DE MIRA",19)
 Toggle(AimP,"No Recoil",20,function() return Cfg.Aim.NoRecoil end,function(v) Cfg.Aim.NoRecoil=v end)
-Toggle(AimP,"Fast Reload",21,function() return Cfg.Aim.FastReload end,function(v) Cfg.Aim.FastReload=v end)
-Toggle(AimP,"Infinite Ammo",22,function() return Cfg.Aim.InfAmmo end,function(v) Cfg.Aim.InfAmmo=v end)
-KB(AimP,"Aim Key (segurar)",24,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
-PLWidget(AimP,26,"LISTA DE EXCLUSÃO",Cfg.Aim.Blacklist)
+Toggle(AimP,"Infinite Ammo",21,function() return Cfg.Aim.InfAmmo end,function(v)
+    Cfg.Aim.InfAmmo=v
+    if v then _HookChar(LP.Character) else
+        for tool in pairs(_iaConns) do _UnhookTool(tool) end
+    end
+end)
+KB(AimP,"Aim Key (segurar)",23,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
+PLWidget(AimP,25,"LISTA DE EXCLUSÃO",Cfg.Aim.Blacklist)
 Toggle(FovP,"Mostrar Círculo FOV",0,function() return Cfg.Aim.ShowFOV end,function(v) Cfg.Aim.ShowFOV=v; _fovLastVis=nil end)
 Toggle(FovP,"Usar FOV no Aimbot",1,function() return Cfg.Aim.UseFOV end,function(v) Cfg.Aim.UseFOV=v end)
 Toggle(FovP,"FOV Segue o Mouse",2,function() return Cfg.Aim.FOVFollow end,function(v) Cfg.Aim.FOVFollow=v; _fovLastCX=-1 end)
@@ -1711,9 +1868,14 @@ end)
 EnableBadge(TrgP,0,"TriggerBot","TRIG",function() return Cfg.Trigger.Enabled end,function(v) Cfg.Trigger.Enabled=v end)
 Toggle(TrgP,"Team Check",1,function() return Cfg.Trigger.TeamCheck end,function(v) Cfg.Trigger.TeamCheck=v end)
 Slider(TrgP,"Delay (ms)",0,1000,80,3,function(v) Cfg.Trigger.Delay=v end)
-Sep(TrgP,5); SL(TrgP,"AUTO AIMBOT",6)
-Toggle(TrgP,"AutoBot (Aimbot automático)",7,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
-do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=9
+Sep(TrgP,5); SL(TrgP,"CLICK CONTROL",6)
+Toggle(TrgP,"Click Control (múltiplos clicks)",7,function() return Cfg.Trigger.ClickControl end,function(v) Cfg.Trigger.ClickControl=v end,nil,C.orange)
+Slider(TrgP,"Nº de Clicks por alvo",1,10,3,9,function(v) Cfg.Trigger.ClickCount=v end)
+do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=11
+    local l=Instance.new("TextLabel",f); l.Text="Dispara N clicks ao detectar um alvo.\nSem Click Control = 1 click padrão."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
+Sep(TrgP,13); SL(TrgP,"AUTO AIMBOT",14)
+Toggle(TrgP,"AutoBot (Aimbot automático)",15,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
+do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=17
     local l=Instance.new("TextLabel",f); l.Text="Mira automaticamente sem segurar tecla.\nUsa Wall/Team Check e FOV do Aimbot."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
 
 local EspP=Panel(PVis,"ESP",0,0,435,468); local TrackP=Panel(PVis,"Track Player",443,0,435,468)
@@ -1815,16 +1977,23 @@ do
     Btn(UtilP,"🔧 Pegar Mais Próxima",12,function() local n=GrabNearestTool(); gs(n and "✓ "..n or "❌ Nenhuma",n and C.green or C.redH) end,Color3.fromRGB(20,50,20))
     Btn(UtilP,"↺ Listar Tools do Mapa",13,RefTools,Color3.fromRGB(12,35,55),C.blueH)
 end
-Sep(UtilP,15); SL(UtilP,"BOOMBOX",16)
-do
-    local bbBox=IFld(UtilP,"ID da Música...",17,function(v) Cfg.Misc.BoomboxID=v end)
-    local bsF=Instance.new("Frame",UtilP); bsF.Size=UDim2.new(1,0,0,14); bsF.BackgroundTransparency=1; bsF.LayoutOrder=19; local bsL=Instance.new("TextLabel",bsF); bsL.Text="Parado"; bsL.Size=UDim2.new(1,0,1,0); bsL.BackgroundTransparency=1; bsL.TextColor3=C.dim; bsL.Font=FM; bsL.TextSize=10; bsL.TextXAlignment=Enum.TextXAlignment.Left
-    local prf=Instance.new("Frame",UtilP); prf.Size=UDim2.new(1,0,0,28); prf.BackgroundTransparency=1; prf.LayoutOrder=20; local pLL=Instance.new("UIListLayout",prf); pLL.FillDirection=Enum.FillDirection.Horizontal; pLL.Padding=UDim.new(0,4)
-    local pBtn=Instance.new("TextButton",prf); pBtn.Text="▶ Tocar"; pBtn.Size=UDim2.new(0.5,-2,1,0); pBtn.BackgroundColor3=Color3.fromRGB(14,52,14); pBtn.TextColor3=C.green; pBtn.Font=FB; pBtn.TextSize=12; pBtn.BorderSizePixel=0; Instance.new("UICorner",pBtn).CornerRadius=UDim.new(0,4)
-    local sBtn=Instance.new("TextButton",prf); sBtn.Text="■ Parar"; sBtn.Size=UDim2.new(0.5,-2,1,0); sBtn.BackgroundColor3=Color3.fromRGB(52,10,10); sBtn.TextColor3=C.redH; sBtn.Font=FB; sBtn.TextSize=12; sBtn.BorderSizePixel=0; Instance.new("UICorner",sBtn).CornerRadius=UDim.new(0,4)
-    pBtn.MouseButton1Click:Connect(function() local id=Cfg.Misc.BoomboxID~="" and Cfg.Misc.BoomboxID or bbBox.Text; if id~="" then PlayBoom(id); bsL.Text="▶ "..id; bsL.TextColor3=C.green else bsL.Text="❌"; bsL.TextColor3=C.redH end end)
-    sBtn.MouseButton1Click:Connect(function() StopBoom(); bsL.Text="Parado"; bsL.TextColor3=C.dim end)
-end
+Sep(UtilP,15); SL(UtilP,"INFINITE YIELD",16)
+
+local btn = Instance.new("TextButton")
+btn.Parent = UtilP
+btn.Size = UDim2.new(1,0,0,28)
+btn.LayoutOrder = 17
+btn.Text = "Executar Infinite Yield"
+btn.BackgroundColor3 = Color3.fromRGB(14,52,14)
+btn.TextColor3 = C.green
+btn.Font = FB
+btn.TextSize = 12
+btn.BorderSizePixel = 0
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0,4)
+btn.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end)
+
 Sep(UtilP,22); SL(UtilP,"TOOL DUPLICATOR",23)
 IFld(UtilP,"Nome da Tool...",24,function(v) Cfg.Misc.DupeToolName=v end)
 Btn(UtilP,"Duplicar Tool",26,DupeTool)
@@ -1850,36 +2019,6 @@ do
     end
 end
 
-local Tr1=Panel(PTroll,"Trollagem - Pessoal",0,0,435,468,C.purple); local Tr2=Panel(PTroll,"Chat / Som",443,0,435,468,C.purple)
-SL(Tr1,"APARÊNCIA PESSOAL",0,C.purpleH)
-Toggle(Tr1,"Spin/Spinbot",1,function() return Cfg.Misc.SpinBot end,function(v) Cfg.Misc.SpinBot=v; TrollSpin(v) end,nil,C.purpleH)
-Slider(Tr1,"Spin Speed",1,50,10,3,function(v) Cfg.Troll.SpinSpeed=v; if Cfg.Misc.SpinBot then TrollSpin(true) end end)
-Toggle(Tr1,"Invisible",6,function() return Cfg.Troll.Invisible end,function(v) Cfg.Troll.Invisible=v; TrollInvis(v) end,nil,C.purpleH)
-Sep(Tr1,8); SL(Tr1,"TAMANHO",9,C.purpleH)
-Btn(Tr1,"🔷 Giant",10,function() TrollScale(Cfg.Troll.GiantScale) end,Color3.fromRGB(18,38,78),C.blueH)
-Btn(Tr1,"🔸 Tiny",12,function() TrollScale(Cfg.Troll.TinyScale) end,Color3.fromRGB(38,18,78),C.purpleH)
-Btn(Tr1,"↺ Normal",14,function() TrollScale(1) end,C.bg4,C.text)
-Slider(Tr1,"Giant Scale",2,20,5,16,function(v) Cfg.Troll.GiantScale=v end)
-Slider(Tr1,"Tiny Scale",1,10,3,18,function(v) Cfg.Troll.TinyScale=v/10 end)
-Sep(Tr1,20); SL(Tr1,"RAINBOW",21,C.purpleH)
-Toggle(Tr1,"Rainbow Armor",22,function() return Cfg.Troll.Rainbow end,function(v) Cfg.Troll.Rainbow=v; EnableRainbow(v) end,nil,C.purpleH)
-Slider(Tr1,"Rainbow Speed",1,20,5,24,function(v) Cfg.Troll.RainbowSpeed=v*0.01 end)
-SL(Tr2,"CHAT SPAM",0,C.purpleH)
-IFld(Tr2,"Mensagem do spam...",1,function(v) Cfg.Troll.SpamMsg=v end)
-Slider(Tr2,"Delay (s)",1,30,1,3,function(v) Cfg.Troll.SpamDelay=v end)
-Toggle(Tr2,"Chat Spammer",5,function() return Cfg.Troll.ChatSpam end,function(v) Cfg.Troll.ChatSpam=v; if v then StartSpam() else StopSpam() end end,nil,C.purpleH)
-Sep(Tr2,7); SL(Tr2,"SOUND SPAM",8,C.purpleH)
-local sndBox=IFld(Tr2,"ID do som...",9,function(v) Cfg.Troll.SoundID=v end)
-local sndSF=Instance.new("Frame",Tr2); sndSF.Size=UDim2.new(1,0,0,14); sndSF.BackgroundTransparency=1; sndSF.LayoutOrder=11; local sndSL=Instance.new("TextLabel",sndSF); sndSL.Text="Parado"; sndSL.Size=UDim2.new(1,0,1,0); sndSL.BackgroundTransparency=1; sndSL.TextColor3=C.dim; sndSL.Font=FM; sndSL.TextSize=10; sndSL.TextXAlignment=Enum.TextXAlignment.Left
-local sndRow=Instance.new("Frame",Tr2); sndRow.Size=UDim2.new(1,0,0,28); sndRow.BackgroundTransparency=1; sndRow.LayoutOrder=12; local sndLL=Instance.new("UIListLayout",sndRow); sndLL.FillDirection=Enum.FillDirection.Horizontal; sndLL.Padding=UDim.new(0,4)
-local sPlay=Instance.new("TextButton",sndRow); sPlay.Text="▶"; sPlay.Size=UDim2.new(0.5,-2,1,0); sPlay.BackgroundColor3=Color3.fromRGB(38,6,58); sPlay.TextColor3=C.purpleH; sPlay.Font=FB; sPlay.TextSize=12; sPlay.BorderSizePixel=0; Instance.new("UICorner",sPlay).CornerRadius=UDim.new(0,4)
-local sStop=Instance.new("TextButton",sndRow); sStop.Text="■ Parar"; sStop.Size=UDim2.new(0.5,-2,1,0); sStop.BackgroundColor3=Color3.fromRGB(52,10,10); sStop.TextColor3=C.redH; sStop.Font=FB; sStop.TextSize=12; sStop.BorderSizePixel=0; Instance.new("UICorner",sStop).CornerRadius=UDim.new(0,4)
-sPlay.MouseButton1Click:Connect(function()
-    local id=Cfg.Troll.SoundID~="" and Cfg.Troll.SoundID or sndBox.Text
-    if id~="" then StartSoundSpam(id); sndSL.Text="▶ "..id; sndSL.TextColor3=C.purpleH else sndSL.Text="❌"; sndSL.TextColor3=C.redH end
-end)
-sStop.MouseButton1Click:Connect(function() StopSoundSpam(); sndSL.Text="Parado"; sndSL.TextColor3=C.dim end)
-
 local KbP=Panel(PSettings,"Teclas de Atalho",0,0,435,468); local CfgP=Panel(PSettings,"Configurações & Saves",443,0,290,468); local LogP=Panel(PSettings,"Chat Log",737,0,175,468)
 KB(KbP,"Toggle GUI",0,function() return Cfg.Settings.ToggleKeyName end,function(k,n) Cfg.Settings.ToggleKey=k; Cfg.Settings.ToggleKeyName=n end)
 KB(KbP,"ESP On/Off",2,function() return Cfg.Settings.ESPKeyName end,function(k,n) Cfg.Settings.ESPKey=k; Cfg.Settings.ESPKeyName=n end)
@@ -1890,6 +2029,30 @@ KB(KbP,"Speed On/Off",10,function() return Cfg.Settings.SpeedKeyName end,functio
 KB(KbP,"Xray On/Off",12,function() return Cfg.Settings.XrayKeyName end,function(k,n) Cfg.Settings.XrayKey=k; Cfg.Settings.XrayKeyName=n end)
 KB(KbP,"FreeCam On/Off",14,function() return Cfg.Settings.FreeCamKeyName end,function(k,n) Cfg.Settings.FreeCamKey=k; Cfg.Settings.FreeCamKeyName=n end)
 KB(KbP,"Aim Key (segurar)",16,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
+Sep(KbP,18); SL(KbP,"🫥  TELAGEM BYPASS",19,C.orange)
+Toggle(KbP,"Ativar Telagem Bypass",20,
+    function() return Cfg.Settings.BypassEnabled end,
+    function(v)
+        Cfg.Settings.BypassEnabled=v
+        -- se desabilitar e bypass estava ativo, restaura
+        if not v and _bypassActive then
+            _bypassActive=false; ApplyBypass(false)
+        end
+    end, nil, C.orange)
+KB(KbP,"Bypass Key (toggle)",22,
+    function() return Cfg.Settings.BypassKeyName end,
+    function(k,n) Cfg.Settings.BypassKey=k; Cfg.Settings.BypassKeyName=n end)
+do
+    local f=Instance.new("Frame",KbP); f.Size=UDim2.new(1,0,0,42); f.BackgroundColor3=Color3.fromRGB(28,18,6); f.BorderSizePixel=0; f.LayoutOrder=24; Instance.new("UICorner",f).CornerRadius=UDim.new(0,4); Instance.new("UIStroke",f).Color=Color3.fromRGB(80,50,10)
+    local l=Instance.new("TextLabel",f); l.Text="🫥  Quando ativado, pressionar a Bypass Key esconde\na GUI e os drawings (ESP/FOV) instantaneamente.\nPressione novamente para restaurar tudo."; l.Size=UDim2.new(1,-12,1,0); l.Position=UDim2.new(0,6,0,0); l.BackgroundTransparency=1; l.TextColor3=Color3.fromRGB(180,130,50); l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Center
+end
+-- botão de teste rápido
+local _bypassBtnLbl = "🫥  Testar Bypass (toggle)"
+local bypassTestBtn = Btn(KbP, _bypassBtnLbl, 26, function()
+    if not Cfg.Settings.BypassEnabled then return end
+    _bypassActive = not _bypassActive
+    ApplyBypass(_bypassActive)
+end, Color3.fromRGB(30,20,6), C.orange)
 SL(CfgP,"SAVES",0)
 local svSt=StatusLbl(CfgP,1)
 local svBox=IFld(CfgP,"Nome do save...",2,function() end)
@@ -1922,11 +2085,11 @@ Sep(CfgP,21); SL(CfgP,"REMOVER SCRIPT",22,C.red)
 Btn(CfgP,"🗑 Desligar & Remover Tudo",23,function()
     Cfg.Aim.Aimbot=false; Cfg.ESP.Enabled=false; Cfg.Xray.Enabled=false
     Cfg.Misc.Fly=false; Cfg.Misc.Noclip=false; Cfg.Misc.Speed=false; Cfg.Misc.FreeCam=false
-    Cfg.Misc.ThirdPerson=false; Cfg.Troll.ChatSpam=false; Cfg.Troll.Rainbow=false; Cfg.Misc.SpinBot=false
+    Cfg.Misc.ThirdPerson=false; Cfg.Misc.SpinBot=false
     Cfg.Modes.Aquaman=false; Cfg.Modes.NoFallDmg=false
     DisableFly(); DisableNoclip(); DisableFreeCam(); DisableThirdPerson()
-    StopBoom(); StopSoundSpam()
-    if _spinBG then pcall(function() _spinBG:Destroy() end) end
+    if _bypassActive then _bypassActive=false; ApplyBypass(false) end
+    for tool in pairs(_iaConns) do _UnhookTool(tool) end
     for p,_ in pairs(ESPO) do KillESP(p) end
     for _,ln in ipairs(_fovLines) do pcall(function() ln:Remove() end) end
     local char=LP.Character; if char then
