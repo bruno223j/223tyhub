@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════╗
--- ║                   223HUB  v11.0  [OTIMIZADO]            ║
+-- ║            223HUB  v1.0  🔴 RELEASE                ║
 -- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
 -- ║      DISCORD: .223j  |  frty2017                        ║
 -- ╚══════════════════════════════════════════════════════════╝
@@ -131,7 +131,7 @@ Instance.new("UICorner",KTop).CornerRadius=UDim.new(0,10)
 local KTopFix=Instance.new("Frame",KTop); KTopFix.Size=UDim2.new(1,0,0.5,0); KTopFix.Position=UDim2.new(0,0,0.5,0); KTopFix.BackgroundColor3=Color3.fromRGB(14,4,4); KTopFix.BorderSizePixel=0
 local KTopDiv=Instance.new("Frame",KC); KTopDiv.Size=UDim2.new(1,0,0,1); KTopDiv.Position=UDim2.new(0,0,0,50); KTopDiv.BackgroundColor3=Color3.fromRGB(165,20,20); KTopDiv.BorderSizePixel=0
 
-local KLogo=Instance.new("TextLabel",KTop); KLogo.Text="◈  223HUB"
+local KLogo=Instance.new("TextLabel",KTop); KLogo.Text="◈  223HUB  v1.0"
 KLogo.Size=UDim2.new(1,0,1,0); KLogo.BackgroundTransparency=1; KLogo.TextColor3=Color3.fromRGB(255,255,255)
 KLogo.Font=Enum.Font.GothamBold; KLogo.TextSize=20; KLogo.TextXAlignment=Enum.TextXAlignment.Center
 
@@ -145,7 +145,7 @@ end
 
 KL(KC,"🔐",38,Color3.fromRGB(255,255,255),60,Enum.Font.GothamBold)
 KL(KC,"VERIFICAÇÃO DE ACESSO",13,Color3.fromRGB(165,20,20),108,Enum.Font.GothamBold)
-KL(KC,"Insira sua key para acessar o 223HUB v11",11,Color3.fromRGB(75,75,90),128)
+KL(KC,"Insira sua key para acessar o 223HUB v1.0 RELEASE",11,Color3.fromRGB(75,75,90),128)
 
 local KBadgeRow=Instance.new("Frame",KC); KBadgeRow.Size=UDim2.new(1,-40,0,26); KBadgeRow.Position=UDim2.new(0,20,0,152); KBadgeRow.BackgroundTransparency=1
 local KBL=Instance.new("UIListLayout",KBadgeRow); KBL.FillDirection=Enum.FillDirection.Horizontal; KBL.HorizontalAlignment=Enum.HorizontalAlignment.Center; KBL.Padding=UDim.new(0,6)
@@ -188,7 +188,7 @@ KSavedInfo.BackgroundTransparency=1; KSavedInfo.Text=""; KSavedInfo.TextColor3=C
 KSavedInfo.Font=Enum.Font.Gotham; KSavedInfo.TextSize=10; KSavedInfo.TextXAlignment=Enum.TextXAlignment.Center
 
 local KFooter=Instance.new("TextLabel",KC); KFooter.Size=UDim2.new(1,-40,0,14); KFooter.Position=UDim2.new(0,20,0,350)
-KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP"
+KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP  ·  v1.0 RELEASE"
 KFooter.TextColor3=Color3.fromRGB(40,40,52); KFooter.Font=Enum.Font.Gotham; KFooter.TextSize=9; KFooter.TextXAlignment=Enum.TextXAlignment.Center
 
 KC.BackgroundTransparency=1; KC.Position=UDim2.new(0.5,-240,0.58,-200)
@@ -1868,11 +1868,11 @@ local LC=Instance.new("Frame",LF); LC.Size=UDim2.new(0,420,0,170); LC.Position=U
 local function LBL(p,t,sz,col,y,fn) local l=Instance.new("TextLabel",p); l.Text=t; l.Size=UDim2.new(1,0,0,sz); l.Position=UDim2.new(0,0,0,y); l.BackgroundTransparency=1; l.TextColor3=col; l.Font=fn or FB; l.TextSize=sz; l.TextXAlignment=Enum.TextXAlignment.Center end
 LBL(LC,"◈",50,C.red,0); LBL(LC,"223HUB",42,C.wht,52); LBL(LC,"HUB BY REVOLUCIONARI'US GROUP",14,C.dim,98,FM)
 LBL(LC,"SCRIPT FEITO POR BRUNO223J AND TY  ·  DISCORD: .223j | frty2017",11,C.gold,114,FM)
-LBL(LC,"v11.0  ·  Public Beta",10,C.red,130,FC)
+LBL(LC,"v1.0  ·  🔴 RELEASE",10,C.red,130,FC)
 local BC=Instance.new("Frame",LF); BC.Size=UDim2.new(0,360,0,5); BC.Position=UDim2.new(0.5,-180,0.5,62); BC.BackgroundColor3=C.bg4; BC.BorderSizePixel=0; Instance.new("UICorner",BC).CornerRadius=UDim.new(1,0)
 local BF=Instance.new("Frame",BC); BF.Size=UDim2.new(0,0,1,0); BF.BackgroundColor3=C.red; BF.BorderSizePixel=0; Instance.new("UICorner",BF).CornerRadius=UDim.new(1,0)
 local LST=Instance.new("TextLabel",LF); LST.Size=UDim2.new(0,360,0,16); LST.Position=UDim2.new(0.5,-180,0.5,76); LST.BackgroundTransparency=1; LST.TextColor3=C.dim; LST.Font=FC; LST.TextSize=10; LST.TextXAlignment=Enum.TextXAlignment.Center; LST.Text="Inicializando..."
-local LSTEPS={{0.12,"Verificando..."},{0.3,"ESP & Xray..."},{0.45,"Aimbot..."},{0.6,"Modos..."},{0.75,"Keybinds..."},{0.9,"Saves..."},{1.0,"Bem-vindo, "..LP.Name.."!"}}
+local LSTEPS={{0.12,"Verificando..."},{0.3,"ESP & Xray..."},{0.45,"Aimbot..."},{0.6,"Modos..."},{0.75,"Keybinds..."},{0.9,"Saves..."},{1.0,"🎉 Bem-vindo, "..LP.Name.."!"}}
 task.spawn(function()
     local st=tick()
     while true do
@@ -1901,7 +1901,7 @@ local _=Instance.new("Frame",TB); _.Size=UDim2.new(1,0,0,6); _.BackgroundColor3=
 local _=Instance.new("Frame",Win); _.Size=UDim2.new(1,0,0,1); _.Position=UDim2.new(0,0,0,38); _.BackgroundColor3=C.red; _.BorderSizePixel=0
 local LG=Instance.new("Frame",TB); LG.Size=UDim2.new(0,218,1,0); LG.BackgroundTransparency=1
 local _=Instance.new("TextLabel",LG); _.Text="◈"; _.Size=UDim2.new(0,30,1,0); _.Position=UDim2.new(0,8,0,0); _.BackgroundTransparency=1; _.TextColor3=C.red; _.Font=FB; _.TextSize=20
-local _=Instance.new("TextLabel",LG); _.Text="223HUB"; _.Size=UDim2.new(1,-40,0,22); _.Position=UDim2.new(0,36,0,5); _.BackgroundTransparency=1; _.TextColor3=C.wht; _.Font=FB; _.TextSize=15; _.TextXAlignment=Enum.TextXAlignment.Left
+local _=Instance.new("TextLabel",LG); _.Text="223HUB  v1.0"; _.Size=UDim2.new(1,-40,0,22); _.Position=UDim2.new(0,36,0,5); _.BackgroundTransparency=1; _.TextColor3=C.wht; _.Font=FB; _.TextSize=15; _.TextXAlignment=Enum.TextXAlignment.Left
 local _=Instance.new("TextLabel",LG); _.Text="BRUNO223J & TY · .223j | frty2017"; _.Size=UDim2.new(1,-40,0,12); _.Position=UDim2.new(0,36,0,22); _.BackgroundTransparency=1; _.TextColor3=C.gold; _.Font=FM; _.TextSize=9; _.TextXAlignment=Enum.TextXAlignment.Left
 local _=Instance.new("Frame",TB); _.Size=UDim2.new(0,1,0.55,0); _.Position=UDim2.new(0,216,0.22,0); _.BackgroundColor3=C.sep; _.BorderSizePixel=0
 local MinB=Instance.new("TextButton",TB); MinB.Text="—"; MinB.Size=UDim2.new(0,28,0,22); MinB.Position=UDim2.new(1,-33,0.5,-11); MinB.BackgroundColor3=C.bg4; MinB.TextColor3=C.dim; MinB.Font=FB; MinB.TextSize=13; MinB.BorderSizePixel=0; Instance.new("UICorner",MinB).CornerRadius=UDim.new(0,4)
@@ -2344,7 +2344,7 @@ Btn(CfgP,"↺ Atualizar Saves",13,RefSaves); RefSaves()
 Sep(CfgP,15); SL(CfgP,"CRÉDITOS",16)
 IL(CfgP,"SCRIPT POR BRUNO223J AND TY",17,C.gold)
 IL(CfgP,"DISCORD: .223j  |  frty2017",18,C.gold)
-IL(CfgP,"HUB REVOLUCIONARI'US GROUP  v11.0",19,C.wht)
+IL(CfgP,"REVOLUCIONARI'US GROUP  ·  v1.0 RELEASE 🔴",19,C.wht)
 IL(CfgP,"Toggle: [;] · Arrastar pela topbar",20,C.dim)
 Sep(CfgP,21); SL(CfgP,"REMOVER SCRIPT",22,C.red)
 Btn(CfgP,"🗑 Desligar & Remover Tudo",23,function()
@@ -2362,7 +2362,7 @@ Btn(CfgP,"🗑 Desligar & Remover Tudo",23,function()
         if h then h.WalkSpeed=16; h.JumpPower=50; h.PlatformStand=false end
     end
     task.wait(0.1); if SG and SG.Parent then SG:Destroy() end
-    print("[223HUB v11.0] Removido com sucesso.")
+    print("[223HUB v1.0 RELEASE] Removido com sucesso.")
 end,Color3.fromRGB(80,8,8),C.redH)
 
 SL(LogP,"CHAT LOG",0,C.gold)
@@ -2382,6 +2382,6 @@ end
 Btn(LogP,"↺ Atualizar",2,RefLog,C.bg4,C.gold); RefLog()
 task.spawn(function() while true do task.wait(5); if _curTab=="Settings" then pcall(RefLog) end end end)
 
-print("[223HUB v11.0] ✓ LOADED [OTIMIZADO] | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
+print("[223HUB v1.0 RELEASE] ✓ LOADED | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
 
 end -- fim de _223HUB_MAIN()
