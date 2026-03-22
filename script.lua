@@ -358,7 +358,8 @@ local Cfg = {
         AimStrength=70, Blacklist={},
     },
     Trigger = { Enabled=false, TeamCheck=false, Delay=80, AutoBot=false,
-                ClickControl=false, ClickCount=3 },
+                ClickControl=false, ClickCount=3,
+                OneShot=false, OneShotDelay=3 },
     Misc = {
         Fly=false, FlySpeed=50, FlyBoost=false, Noclip=false,
         Speed=false, WalkSpeed=25, AntiAFK=false,
@@ -930,10 +931,12 @@ end
 
 -- ============================================================
 -- TRIGGERBOT
--- ClickControl: quando ativado, dispara N clicks ao detectar alvo
+-- ClickControl / One-Shot: modos de disparo do TriggerBot
 -- ============================================================
-local _tbLast    = 0
-local _tbFiring  = false  -- evita disparos sobrepostos
+local _tbLast      = 0
+local _tbFiring    = false  -- evita disparos sobrepostos
+local _osShotReady = true   -- One-Shot: libera o próximo disparo
+local _osLastTgt   = nil    -- One-Shot: player do último disparo
 
 local function _DoClicks(n)
     if _tbFiring then return end
@@ -958,6 +961,26 @@ AC(RunService.Heartbeat:Connect(function()
     local p=Players:GetPlayerFromCharacter(model); if not p then return end
     if not IsValidTarget(p) then return end
     if Cfg.Trigger.TeamCheck and SameTeam(p) then return end
+
+    -- One-Shot: 1 disparo por lock, depois aguarda delay configurável
+    if Cfg.Trigger.OneShot then
+        -- Troca de alvo → reseta imediatamente para atirar
+        if p ~= _osLastTgt then
+            _osShotReady = true
+            _osLastTgt   = p
+        end
+        if not _osShotReady then return end
+        _osShotReady = false
+        _tbLast = tick()
+        local clicks = (Cfg.Trigger.ClickControl and Cfg.Trigger.ClickCount) or 1
+        _DoClicks(clicks)
+        -- Após o delay, libera próximo tiro no mesmo alvo
+        task.delay(Cfg.Trigger.OneShotDelay, function()
+            if _osLastTgt == p then _osShotReady = true end
+        end)
+        return
+    end
+
     _tbLast=tick()
     local clicks = (Cfg.Trigger.ClickControl and Cfg.Trigger.ClickCount) or 1
     _DoClicks(clicks)
@@ -2055,9 +2078,16 @@ Toggle(TrgP,"Click Control (múltiplos clicks)",7,function() return Cfg.Trigger.
 Slider(TrgP,"Nº de Clicks por alvo",1,10,3,9,function(v) Cfg.Trigger.ClickCount=v end)
 do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=11
     local l=Instance.new("TextLabel",f); l.Text="Dispara N clicks ao detectar um alvo.\nSem Click Control = 1 click padrão."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
-Sep(TrgP,13); SL(TrgP,"AUTO AIMBOT",14)
-Toggle(TrgP,"AutoBot (Aimbot automático)",15,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
-do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=17
+Sep(TrgP,12); SL(TrgP,"ONE-SHOT",13,C.orange)
+Toggle(TrgP,"One-Shot (1 tiro por lock)",14,function() return Cfg.Trigger.OneShot end,function(v)
+    Cfg.Trigger.OneShot=v; _osShotReady=true; _osLastTgt=nil
+end,nil,C.orange)
+Slider(TrgP,"Delay entre tiros (s)",1,10,3,16,function(v) Cfg.Trigger.OneShotDelay=v end)
+do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,30); f.BackgroundTransparency=1; f.LayoutOrder=18
+    local l=Instance.new("TextLabel",f); l.Text="Ao travar num alvo: atira 1x e aguarda o delay.\nAo trocar de alvo, atira imediatamente."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
+Sep(TrgP,20); SL(TrgP,"AUTO AIMBOT",21)
+Toggle(TrgP,"AutoBot (Aimbot automático)",22,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
+do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=24
     local l=Instance.new("TextLabel",f); l.Text="Mira automaticamente sem segurar tecla.\nUsa Wall/Team Check e FOV do Aimbot."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
 
 local EspP=Panel(PVis,"ESP",0,0,435,468); local TrackP=Panel(PVis,"Track Player",443,0,435,468)
