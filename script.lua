@@ -219,18 +219,13 @@ local function ShakeCard()
 end
 
 local function OnKeyApproved()
-    -- ─────────────────────────────────────────────────────────
-    -- FASE 1 (0s): conteúdo do card some
-    -- ─────────────────────────────────────────────────────────
+    -- FASE 1: conteúdo do card some
     for _,v in ipairs(KC:GetDescendants()) do
         if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
             _KTween:Create(v,TweenInfo.new(0.12),{TextTransparency=1}):Play()
         end
     end
-
-    -- ─────────────────────────────────────────────────────────
-    -- FASE 2 (0.12s): card COMPACTA para barrinha fina vermelha
-    -- ─────────────────────────────────────────────────────────
+    -- FASE 2: card COMPACTA para barrinha fina vermelha no centro
     task.delay(0.12,function()
         _KTween:Create(KCStroke,TweenInfo.new(0.18),{Transparency=1}):Play()
         _KTween:Create(KBG,TweenInfo.new(0.22),{BackgroundTransparency=1}):Play()
@@ -240,10 +235,7 @@ local function OnKeyApproved()
             BackgroundColor3=Color3.fromRGB(165,20,20),
         }):Play()
     end)
-
-    -- ─────────────────────────────────────────────────────────
-    -- FASE 3 (0.50s): barrinha EXPANDE para tela inteira
-    -- ─────────────────────────────────────────────────────────
+    -- FASE 3: barrinha EXPANDE para tela inteira escura
     task.delay(0.50,function()
         _KTween:Create(KC,TweenInfo.new(0.38,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
             Size=UDim2.new(1,0,1,0),
@@ -251,221 +243,10 @@ local function OnKeyApproved()
             BackgroundColor3=Color3.fromRGB(7,7,10),
         }):Play()
     end)
-
-    -- ─────────────────────────────────────────────────────────
-    -- FASE 4 (0.92s): inicia o hub em background (invisível)
-    -- ─────────────────────────────────────────────────────────
-    task.delay(0.92,function()
-        -- Limpa restos do card key
-        for _,v in ipairs(KC:GetDescendants()) do pcall(function() v:Destroy() end) end
-
-        -- Inicializa o hub (Win é criado dentro de _223HUB_MAIN mas começa oculto)
-        _G._223HUB_PreHide = true   -- sinaliza para o hub começar oculto
+    -- FASE 4: destrói key GUI e inicia o hub normalmente
+    task.delay(0.95,function()
+        if KSG and KSG.Parent then KSG:Destroy() end
         task.spawn(_223HUB_MAIN)
-
-        -- Aguarda o Win ser criado (até 3s)
-        local waited = 0
-        repeat task.wait(0.05); waited = waited + 0.05 until _G._223HUB_Win or waited >= 3
-
-        local Win = _G._223HUB_Win
-        if not Win then
-            -- fallback: destrói key gui e segue
-            if KSG and KSG.Parent then KSG:Destroy() end
-            return
-        end
-
-        -- ── Win começa como barrinha fina no centro (mesma largura, 5px alto) ──
-        Win.Size     = UDim2.new(0,920,0,5)
-        Win.Position = UDim2.new(0.5,-460,0.5,-2)
-        Win.BackgroundTransparency = 0
-        for _,v in ipairs(Win:GetDescendants()) do
-            if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("Frame") or v:IsA("ScrollingFrame") then
-                pcall(function()
-                    if v:IsA("TextLabel") or v:IsA("TextButton") then v.TextTransparency=1
-                    else v.BackgroundTransparency=1 end
-                end)
-            end
-        end
-        Win.Visible = true
-
-        -- ─────────────────────────────────────────────────────────
-        -- FASE 5 (0.92s + ~0.05s): janela EXPANDE para tamanho real
-        -- ─────────────────────────────────────────────────────────
-        task.wait(0.05)
-        -- Some a tela de transição (KC/KSG)
-        _KTween:Create(KC,TweenInfo.new(0.25),{BackgroundTransparency=1}):Play()
-
-        -- Expande Win para tamanho normal
-        _KTween:Create(Win,TweenInfo.new(0.45,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
-            Size=UDim2.new(0,920,0,520),
-            Position=UDim2.new(0.5,-460,0.5,-260),
-        }):Play()
-
-        -- ─────────────────────────────────────────────────────────
-        -- FASE 6 (após expansão): overlay de DOWNLOADING dentro do Win
-        -- ─────────────────────────────────────────────────────────
-        task.delay(0.5,function()
-            if KSG and KSG.Parent then KSG:Destroy() end
-
-            -- Overlay escuro sobre o Win
-            local OV = Instance.new("Frame", Win)
-            OV.Name = "_223_Overlay"
-            OV.Size = UDim2.new(1,0,1,0)
-            OV.BackgroundColor3 = Color3.fromRGB(7,7,10)
-            OV.BackgroundTransparency = 0
-            OV.BorderSizePixel = 0
-            OV.ZIndex = 500
-
-            -- Logo
-            local OLogo = Instance.new("TextLabel", OV)
-            OLogo.Text = "◈  223HUB"
-            OLogo.Size = UDim2.new(1,0,0,44)
-            OLogo.Position = UDim2.new(0,0,0.5,-100)
-            OLogo.BackgroundTransparency = 1
-            OLogo.TextColor3 = Color3.fromRGB(165,20,20)
-            OLogo.Font = Enum.Font.GothamBold
-            OLogo.TextSize = 30
-            OLogo.TextXAlignment = Enum.TextXAlignment.Center
-            OLogo.TextTransparency = 1
-            OLogo.ZIndex = 501
-
-            -- Versão
-            local OVer = Instance.new("TextLabel", OV)
-            OVer.Text = "v1.0  🔴 RELEASE"
-            OVer.Size = UDim2.new(1,0,0,16)
-            OVer.Position = UDim2.new(0,0,0.5,-52)
-            OVer.BackgroundTransparency = 1
-            OVer.TextColor3 = Color3.fromRGB(50,50,65)
-            OVer.Font = Enum.Font.Code
-            OVer.TextSize = 11
-            OVer.TextXAlignment = Enum.TextXAlignment.Center
-            OVer.TextTransparency = 1
-            OVer.ZIndex = 501
-
-            -- Step label
-            local OStep = Instance.new("TextLabel", OV)
-            OStep.Text = "Inicializando..."
-            OStep.Size = UDim2.new(1,0,0,18)
-            OStep.Position = UDim2.new(0,0,0.5,-10)
-            OStep.BackgroundTransparency = 1
-            OStep.TextColor3 = Color3.fromRGB(90,90,105)
-            OStep.Font = Enum.Font.Gotham
-            OStep.TextSize = 12
-            OStep.TextXAlignment = Enum.TextXAlignment.Center
-            OStep.TextTransparency = 1
-            OStep.ZIndex = 501
-
-            -- Barra de progresso bg
-            local OBarBg = Instance.new("Frame", OV)
-            OBarBg.Size = UDim2.new(0,400,0,4)
-            OBarBg.Position = UDim2.new(0.5,-200,0.5,24)
-            OBarBg.BackgroundColor3 = Color3.fromRGB(22,22,28)
-            OBarBg.BackgroundTransparency = 1
-            OBarBg.BorderSizePixel = 0
-            OBarBg.ZIndex = 501
-            Instance.new("UICorner",OBarBg).CornerRadius = UDim.new(1,0)
-
-            -- Barra de progresso fill
-            local OBarFill = Instance.new("Frame", OBarBg)
-            OBarFill.Size = UDim2.new(0,0,1,0)
-            OBarFill.BackgroundColor3 = Color3.fromRGB(165,20,20)
-            OBarFill.BackgroundTransparency = 0
-            OBarFill.BorderSizePixel = 0
-            OBarFill.ZIndex = 502
-            Instance.new("UICorner",OBarFill).CornerRadius = UDim.new(1,0)
-
-            -- Porcentagem
-            local OPct = Instance.new("TextLabel", OV)
-            OPct.Text = "0%"
-            OPct.Size = UDim2.new(1,0,0,14)
-            OPct.Position = UDim2.new(0,0,0.5,32)
-            OPct.BackgroundTransparency = 1
-            OPct.TextColor3 = Color3.fromRGB(45,45,58)
-            OPct.Font = Enum.Font.Code
-            OPct.TextSize = 10
-            OPct.TextXAlignment = Enum.TextXAlignment.Center
-            OPct.TextTransparency = 1
-            OPct.ZIndex = 501
-
-            -- Créditos no rodapé
-            local OCred = Instance.new("TextLabel", OV)
-            OCred.Text = "BRUNO223J & TY  ·  REVOLUCIONARI'US GROUP"
-            OCred.Size = UDim2.new(1,0,0,12)
-            OCred.Position = UDim2.new(0,0,1,-20)
-            OCred.BackgroundTransparency = 1
-            OCred.TextColor3 = Color3.fromRGB(35,35,45)
-            OCred.Font = Enum.Font.Gotham
-            OCred.TextSize = 10
-            OCred.TextXAlignment = Enum.TextXAlignment.Center
-            OCred.TextTransparency = 1
-            OCred.ZIndex = 501
-
-            -- Fade-in dos elementos do overlay
-            local fadeIn = TweenInfo.new(0.35, Enum.EasingStyle.Quad)
-            for _,lbl in ipairs({OLogo,OVer,OStep,OPct,OCred}) do
-                _KTween:Create(lbl, fadeIn, {TextTransparency=0}):Play()
-            end
-            _KTween:Create(OBarBg, fadeIn, {BackgroundTransparency=0}):Play()
-
-            -- Restore conteúdo do Win por baixo (ficará visível quando overlay sumir)
-            task.spawn(function()
-                task.wait(0.1)
-                for _,v in ipairs(Win:GetDescendants()) do
-                    if v == OV or v:IsDescendantOf(OV) then continue end
-                    pcall(function()
-                        if v:IsA("TextLabel") or v:IsA("TextButton") then
-                            v.TextTransparency = 0
-                        elseif v:IsA("Frame") or v:IsA("ScrollingFrame") then
-                            -- Restaura apenas frames que tinham transparência forçada
-                            if v.BackgroundTransparency >= 1 and v ~= CF then
-                                local orig = v:GetAttribute("_OrigBGT")
-                                v.BackgroundTransparency = orig or 0
-                            end
-                        end
-                    end)
-                end
-            end)
-
-            -- Steps de download
-            local DSTEPS = {
-                {0.10, "Verificando assinatura..."},
-                {0.25, "Carregando ESP & Xray..."},
-                {0.42, "Carregando Aimbot..."},
-                {0.57, "Carregando Misc & Modos..."},
-                {0.72, "Carregando GUI..."},
-                {0.88, "Aplicando configurações..."},
-                {1.00, "🎉  Bem-vindo, ".._KLP.Name.."!"},
-            }
-            local DTOTAL = 3.0
-
-            task.spawn(function()
-                task.wait(0.4) -- aguarda fade-in
-                local st = tick()
-                while true do
-                    local pr = math.min((tick()-st)/DTOTAL, 1)
-                    _KTween:Create(OBarFill, TweenInfo.new(0.06), {Size=UDim2.new(pr,0,1,0)}):Play()
-                    OPct.Text = math.floor(pr*100).."%"
-                    for i=#DSTEPS,1,-1 do
-                        if pr >= DSTEPS[i][1]-0.01 then OStep.Text=DSTEPS[i][2]; break end
-                    end
-                    if pr >= 1 then break end
-                    task.wait(0.03)
-                end
-
-                -- ── FASE 7: overlay some, hub aparece ──
-                task.wait(0.5)
-                local fadeOut = TweenInfo.new(0.5, Enum.EasingStyle.Quart)
-                _KTween:Create(OV, fadeOut, {BackgroundTransparency=1}):Play()
-                for _,lbl in ipairs({OLogo,OVer,OStep,OPct,OCred}) do
-                    _KTween:Create(lbl, TweenInfo.new(0.3), {TextTransparency=1}):Play()
-                end
-                _KTween:Create(OBarBg, TweenInfo.new(0.3), {BackgroundTransparency=1}):Play()
-                task.wait(0.55)
-                pcall(function() OV:Destroy() end)
-                -- Garante que o Win está visível e interativo
-                Win.Visible = true
-            end)
-        end)
     end)
 end
 
@@ -2004,15 +1785,41 @@ local C={
 }
 local FB=Enum.Font.GothamBold; local FM=Enum.Font.Gotham; local FC=Enum.Font.Code
 
--- Loading screen removida: animação controlada por OnKeyApproved
--- (hub começa com Win oculto e a animação da key controla tudo)
+local LF=Instance.new("Frame",SG); LF.Size=UDim2.new(0,920,0,520); LF.Position=UDim2.new(0.5,-460,0.5,-260)
+LF.BackgroundColor3=C.bg0; LF.BorderSizePixel=0; LF.ZIndex=200
+Instance.new("UICorner",LF).CornerRadius=UDim.new(0,6); Instance.new("UIStroke",LF).Color=C.red
+local function TLn(p,bot) local f=Instance.new("Frame",p); f.Size=UDim2.new(1,0,0,2); f.Position=bot and UDim2.new(0,0,1,-2) or UDim2.new(0,0,0,0); f.BackgroundColor3=C.red; f.BorderSizePixel=0 end
+TLn(LF,false); TLn(LF,true)
+local LC=Instance.new("Frame",LF); LC.Size=UDim2.new(0,420,0,170); LC.Position=UDim2.new(0.5,-210,0.5,-130); LC.BackgroundTransparency=1
+local function LBL(p,t,sz,col,y,fn) local l=Instance.new("TextLabel",p); l.Text=t; l.Size=UDim2.new(1,0,0,sz); l.Position=UDim2.new(0,0,0,y); l.BackgroundTransparency=1; l.TextColor3=col; l.Font=fn or FB; l.TextSize=sz; l.TextXAlignment=Enum.TextXAlignment.Center end
+LBL(LC,"◈",50,C.red,0); LBL(LC,"223HUB",42,C.wht,52); LBL(LC,"HUB BY REVOLUCIONARI'US GROUP",14,C.dim,98,FM)
+LBL(LC,"SCRIPT FEITO POR BRUNO223J AND TY  ·  DISCORD: .223j | frty2017",11,C.gold,114,FM)
+LBL(LC,"v1.0  ·  🔴 RELEASE",10,C.red,130,FC)
+local BC=Instance.new("Frame",LF); BC.Size=UDim2.new(0,360,0,5); BC.Position=UDim2.new(0.5,-180,0.5,62); BC.BackgroundColor3=C.bg4; BC.BorderSizePixel=0; Instance.new("UICorner",BC).CornerRadius=UDim.new(1,0)
+local BF=Instance.new("Frame",BC); BF.Size=UDim2.new(0,0,1,0); BF.BackgroundColor3=C.red; BF.BorderSizePixel=0; Instance.new("UICorner",BF).CornerRadius=UDim.new(1,0)
+local LST=Instance.new("TextLabel",LF); LST.Size=UDim2.new(0,360,0,16); LST.Position=UDim2.new(0.5,-180,0.5,76); LST.BackgroundTransparency=1; LST.TextColor3=C.dim; LST.Font=FC; LST.TextSize=10; LST.TextXAlignment=Enum.TextXAlignment.Center; LST.Text="Inicializando..."
+local LSTEPS={{0.12,"Verificando..."},{0.3,"ESP & Xray..."},{0.45,"Aimbot..."},{0.6,"Modos..."},{0.75,"Keybinds..."},{0.9,"Saves..."},{1.0,"🎉 Bem-vindo, "..LP.Name.."!"}}
+task.spawn(function()
+    local st=tick()
+    while true do
+        local pr=math.min((tick()-st)/3.5,1)
+        BF.Size=UDim2.new(pr,0,1,0)
+        for i=#LSTEPS,1,-1 do if pr>=LSTEPS[i][1]-0.01 then LST.Text=LSTEPS[i][2]; break end end
+        if pr>=1 then break end; task.wait(0.03)
+    end
+end)
+task.wait(3.8)
+TweenService:Create(LF,TweenInfo.new(0.45,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+for _,v in ipairs(LF:GetDescendants()) do
+    if v:IsA("TextLabel") then TweenService:Create(v,TweenInfo.new(0.35),{TextTransparency=1}):Play()
+    elseif v:IsA("Frame") then TweenService:Create(v,TweenInfo.new(0.35),{BackgroundTransparency=1}):Play() end
+end
+task.wait(0.5); LF:Destroy()
 
 local Win=Instance.new("Frame",SG)
 Win.Name="Win"; Win.Size=UDim2.new(0,920,0,520); Win.Position=UDim2.new(0.5,-460,0.5,-260)
 Win.BackgroundColor3=C.bg0; Win.BorderSizePixel=0; Win.Active=true; Win.Draggable=true
 Instance.new("UICorner",Win).CornerRadius=UDim.new(0,6); Instance.new("UIStroke",Win).Color=C.red
--- Se chamado pela animação da key, começa oculto até a animação controlar a aparição
-if _G._223HUB_PreHide then Win.Visible=false; _G._223HUB_PreHide=nil end
 _G._223HUB_Win=Win
 
 local TB=Instance.new("Frame",Win); TB.Size=UDim2.new(1,0,0,38); TB.BackgroundColor3=C.bg1; TB.BorderSizePixel=0; Instance.new("UICorner",TB).CornerRadius=UDim.new(0,6)
