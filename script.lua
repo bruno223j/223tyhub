@@ -1,7 +1,7 @@
 -- ╔══════════════════════════════════════════════════════════╗
--- ║            223HUB  v1.0  🔴 RELEASE                ║
--- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
--- ║      DISCORD: .223j  |  frty2017                        ║
+-- ║            223HUB  v1.0  🔴 RELEASE                     ║
+-- ║      SCRIPT FEITO POR BRUNO223J E TY                     ║
+-- ║      DISCORD: .223j  |  frty2017                         ║
 -- ╚══════════════════════════════════════════════════════════╝
 
 local _KCoreGui = game:GetService("CoreGui")
