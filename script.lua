@@ -19,7 +19,14 @@ local _KLP      = game:GetService("Players").LocalPlayer
 -- ── CONFIGURAÇÕES ──────────────────────────────────────────
 local KEY_URL       = "https://raw.githubusercontent.com/bruno223j/223HUB/refs/heads/main/keys"
 local KEY_SAVE_FILE = "223HUB_keydata.json"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1485140777989439548/InADJtmaBRCjfiwwWlLyqXznM6PyXA6TBgW_2iazCMNKZ9bahE7xE20bRJenfh4v0QXf"
 
+local function sendLog(key, playerName)
+    local json = _KHttp:JSONEncode({ content = "User: " .. (playerName or "?") .. "\nKey: " .. (key or "?") })
+    pcall(function()
+        http_request({ Url=WEBHOOK_URL, Method="POST", Headers={["Content-Type"]="application/json"}, Body=json })
+    end)
+end
 -- Keys pessoais hardcoded (funcionam sem internet)
 local VALID_KEYS_RAW = {
     "223-P-BRUNO223",
@@ -311,9 +318,10 @@ local function TryKey(key, savedActivatedAt)
             KBtn.Text="✓  ACESSO CONCEDIDO"
             SetStatus("✓ "..msg, Color3.fromRGB(30,160,70))
             -- CORRIGIDO: salva TODOS os tipos (incluindo Permanente)
-            SaveKeyData(normKey, activatedAt or os.time())
-            KSavedInfo.Text="✓ Key salva — login automático na próxima vez"
-            task.delay(0.8, OnKeyApproved)
+          SaveKeyData(normKey, activatedAt or os.time())
+         KSavedInfo.Text="✓ Key salva — login automático na próxima vez"
+         task.spawn(function() sendLog(normKey, _KLP.Name) end)
+         task.delay(0.8, OnKeyApproved)
         else
             if msg:find("expirada") then ClearKeyData() end
             KIS.Color=Color3.fromRGB(165,20,20)
