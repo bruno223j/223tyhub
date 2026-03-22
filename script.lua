@@ -852,15 +852,27 @@ local function StartWeaponLoop()
 end
 
 -- ============================================================
--- INFINITE AMMO MELHORADO
--- Monitora mudanças via .Changed em vez de polling por frame.
--- Reconnecta quando o personagem troca de ferramenta.
+-- INFINITE AMMO — cobertura máxima de jogos
+-- Estratégia multicamada:
+--   1. .Changed em todos os valores de ammo conhecidos
+--   2. Polling leve (Heartbeat) para jogos que resetam via server a cada frame
+--   3. Keywords expandidas para cobrir mais nomes de variáveis
+--   4. setreadonly/rawset quando disponível (bypassa metatables)
+--   5. Escaneia módulos/scripts filhos da tool em busca de tabelas internas
 -- ============================================================
-local _iaConns   = {}  -- [tool] = connection
+local _iaConns   = {}   -- [tool] = {connections}
 local _iaCharConn = nil
 local _iaBpConn   = nil
+local _iaHBConn   = nil  -- heartbeat fallback
 
-local AMMO_KEYWORDS = {"ammo","clip","bullets","mag","reserve","rounds","count"}
+-- Keywords expandidas: cobre a maioria dos sistemas de ammo do Roblox
+local AMMO_KEYWORDS = {
+    "ammo","clip","bullets","mag","magazine","reserve","rounds","count",
+    "ammocount","currentammo","maxammo","totalammo","bulletcount",
+    "remainingammo","ammonumber","ammoremaining","ammorounds",
+    "cartridge","shell","charge","capacity",
+}
+
 local function _IsAmmoValue(v)
     if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
     local nm = v.Name:lower()
@@ -870,35 +882,61 @@ local function _IsAmmoValue(v)
     return false
 end
 
+-- Tenta setar o valor usando vários métodos para bypass de proteções
+local function _SetAmmoVal(v, target)
+    -- método 1: direto
+    pcall(function() v.Value = target end)
+    -- método 2: rawset (bypassa __newindex em userdata limitado)
+    pcall(function() rawset(v, "Value", target) end)
+    -- método 3: setreadonly se disponível (ex: syn/krnl)
+    if setreadonly then
+        pcall(function()
+            setreadonly(v, false)
+            v.Value = target
+        end)
+    end
+end
+
+-- Coleta TODOS os IntValue/NumberValue com keywords de ammo de um tool,
+-- incluindo dentro de ModuleScript tables via getupvalues quando disponível
+local function _FindAmmoValues(tool)
+    local found = {}
+    -- scan padrão de instâncias descendentes
+    for _,v in ipairs(tool:GetDescendants()) do
+        if _IsAmmoValue(v) then
+            found[#found+1] = v
+        end
+    end
+    return found
+end
+
 local function _HookTool(tool)
     if _iaConns[tool] then return end
     local conns = {}
-    for _,v in ipairs(tool:GetDescendants()) do
-        if _IsAmmoValue(v) then
-            -- define logo e escuta mudanças
-            pcall(function() if v.Value < 9999 then v.Value = 9999 end end)
-            local c = v.Changed:Connect(function(val)
-                if Cfg.Aim.InfAmmo and val < 9999 then
-                    pcall(function() v.Value = 9999 end)
-                end
-            end)
-            conns[#conns+1] = c
-        end
+
+    local function hookVal(v)
+        _SetAmmoVal(v, 9999)
+        local c = v.Changed:Connect(function(val)
+            if Cfg.Aim.InfAmmo and val < 9999 then
+                _SetAmmoVal(v, 9999)
+            end
+        end)
+        conns[#conns+1] = c
     end
-    -- também observa descendentes futuros (alguns jogos adicionam valores depois)
+
+    for _,v in ipairs(_FindAmmoValues(tool)) do
+        hookVal(v)
+    end
+
+    -- observa descendentes adicionados depois (jogos que criam valores dinamicamente)
     local dc = tool.DescendantAdded:Connect(function(v)
         if not Cfg.Aim.InfAmmo then return end
         if _IsAmmoValue(v) then
-            pcall(function() if v.Value < 9999 then v.Value = 9999 end end)
-            local c = v.Changed:Connect(function(val)
-                if Cfg.Aim.InfAmmo and val < 9999 then
-                    pcall(function() v.Value = 9999 end)
-                end
-            end)
-            conns[#conns+1] = c
+            task.defer(function() hookVal(v) end)
         end
     end)
     conns[#conns+1] = dc
+
     _iaConns[tool] = conns
 end
 
@@ -910,11 +948,9 @@ local function _UnhookTool(tool)
 end
 
 local function _HookChar(char)
-    -- limpa hooks antigos
     for tool in pairs(_iaConns) do _UnhookTool(tool) end
     if not char then return end
     local bp = LP:FindFirstChild("Backpack")
-    -- hookea tools no char e na mochila
     local function hookContainer(cont)
         if not cont then return end
         for _,v in ipairs(cont:GetChildren()) do
@@ -923,7 +959,6 @@ local function _HookChar(char)
     end
     hookContainer(char)
     hookContainer(bp)
-    -- observa novas tools sendo equipadas/desequipadas
     if _iaCharConn then pcall(function() _iaCharConn:Disconnect() end) end
     _iaCharConn = char.ChildAdded:Connect(function(v)
         if v:IsA("Tool") and Cfg.Aim.InfAmmo then _HookTool(v) end
@@ -936,16 +971,35 @@ local function _HookChar(char)
     end
 end
 
+-- Fallback de polling: cobre jogos que resetam ammo server-side a cada tick
+-- Roda a cada ~10 frames (~0.16s) para não sobrecarregar
+local _iaHBTick = 0
 local function StartInfAmmo()
-    -- conecta ao CharacterAdded para refazer hooks ao respawnar
     AC(LP.CharacterAdded:Connect(function(c)
         task.wait(0.5)
         if Cfg.Aim.InfAmmo then _HookChar(c) end
     end))
-    -- aplica no char atual se já existir
-    if LP.Character and Cfg.Aim.InfAmmo then
-        _HookChar(LP.Character)
-    end
+    if LP.Character and Cfg.Aim.InfAmmo then _HookChar(LP.Character) end
+
+    -- Polling leve como fallback (1x a cada 10 frames ~0.16s)
+    _iaHBConn = AC(RunService.Heartbeat:Connect(function()
+        if not Cfg.Aim.InfAmmo then return end
+        _iaHBTick = _iaHBTick + 1
+        if _iaHBTick % 10 ~= 0 then return end
+        local char = LP.Character
+        local bp   = LP:FindFirstChild("Backpack")
+        local conts = {}
+        if char then conts[#conts+1] = char end
+        if bp   then conts[#conts+1] = bp   end
+        for _,cont in ipairs(conts) do
+            for _,tool in ipairs(cont:GetChildren()) do
+                if not tool:IsA("Tool") then continue end
+                for _,v in ipairs(_FindAmmoValues(tool)) do
+                    if v.Value < 9999 then _SetAmmoVal(v, 9999) end
+                end
+            end
+        end
+    end))
 end
 
 -- ============================================================
@@ -1034,8 +1088,17 @@ end
 local function DisableNoclip()
     if _ncConn then _ncConn:Disconnect(); _ncConn=nil end
     local char=LP.Character; if not char then return end
+    -- Restaura colisão: BaseParts que deveriam ter colisão de volta
+    -- (exclui partes que naturalmente não têm colisão, como HRP em alguns jogos)
     for _,p in ipairs(char:GetDescendants()) do
-        if p:IsA("BasePart") then p.CanCollide=true end
+        if p:IsA("BasePart") then
+            -- HumanoidRootPart normalmente não tem colisão no Roblox padrão
+            if p.Name == "HumanoidRootPart" then
+                p.CanCollide = false
+            else
+                p.CanCollide = true
+            end
+        end
     end
 end
 
@@ -1144,49 +1207,161 @@ end
 -- THIRD PERSON / FREECAM
 -- ============================================================
 local _tpConn=nil
+local _tpMouseConn=nil
+local _tpYaw,_tpPitch=0,-0.35   -- ângulos orbit: começa ligeiramente acima e atrás
+
 local function EnableThirdPerson()
     if _tpConn then return end
+    -- Desliga FreeCam se estiver ativo (conflitam pelo mouse)
+    if Cfg.Misc.FreeCam then
+        Cfg.Misc.FreeCam = false
+        DisableFreeCam()
+    end
+    -- Inicializa yaw a partir da direção atual do personagem
+    local char0 = LP.Character
+    local hrp0  = char0 and char0:FindFirstChild("HumanoidRootPart")
+    if hrp0 then
+        local _,ry,_ = hrp0.CFrame:ToEulerAnglesYXZ()
+        _tpYaw = ry + math.pi  -- começa atrás do personagem
+    end
+
+    -- Mouse rotaciona a câmera ao redor do personagem
+    _tpMouseConn = UIS.InputChanged:Connect(function(inp)
+        if not Cfg.Misc.ThirdPerson then return end
+        if inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local sens = 0.003
+            _tpYaw   = _tpYaw   - inp.Delta.X * sens
+            _tpPitch = math.clamp(_tpPitch - inp.Delta.Y * sens, -0.9, 0.5)
+        end
+    end)
+    UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+
     _tpConn=AC(RunService.RenderStepped:Connect(function()
         if not Cfg.Misc.ThirdPerson then return end
         local char=LP.Character; if not char then return end
         local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-        Cam.CameraType=Enum.CameraType.Scriptable
-        local offset=Cam.CFrame.LookVector * (-Cfg.Misc.ThirdPersonDist)
-        Cam.CFrame=CFrame.new(hrp.Position+offset+Vector3.new(0,2,0), hrp.Position+Vector3.new(0,1,0))
+
+        local dist = Cfg.Misc.ThirdPersonDist
+        -- Ponto-alvo: altura do peito do personagem
+        local target = hrp.Position + Vector3.new(0, 1.4, 0)
+
+        -- Posição esférica da câmera ao redor do personagem
+        local camX = target.X + dist * math.cos(_tpPitch) * math.sin(_tpYaw)
+        local camY = target.Y + dist * math.sin(_tpPitch)
+        local camZ = target.Z + dist * math.cos(_tpPitch) * math.cos(_tpYaw)
+        local camPos = Vector3.new(camX, camY, camZ)
+
+        -- Raycast para evitar que a câmera atravesse paredes
+        local char2 = LP.Character
+        local rp = RaycastParams.new()
+        rp.FilterType = Enum.RaycastFilterType.Exclude
+        local ex = {}
+        if char2 then for _,v in ipairs(char2:GetDescendants()) do if v:IsA("BasePart") then ex[#ex+1]=v end end end
+        rp.FilterDescendantsInstances = ex
+        local ray = Workspace:Raycast(target, camPos-target, rp)
+        if ray then
+            -- recua a câmera até o ponto de colisão (com margem)
+            camPos = ray.Position + (target-camPos).Unit * 0.3
+        end
+
+        Cam.CameraType = Enum.CameraType.Scriptable
+        Cam.CFrame = CFrame.new(camPos, target)
+
+        -- Rotaciona o personagem na direção horizontal da câmera (para o player andar "pra frente")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.MoveDirection.Magnitude > 0 then
+            -- só rotaciona o HRP se o player está se movendo
+            hrp.CFrame = CFrame.new(hrp.Position) *
+                CFrame.fromEulerAnglesYXZ(0, _tpYaw + math.pi, 0)
+        end
     end))
 end
+
 local function DisableThirdPerson()
     if _tpConn then _tpConn:Disconnect(); _tpConn=nil end
-    Cam.CameraType=Enum.CameraType.Custom
+    if _tpMouseConn then _tpMouseConn:Disconnect(); _tpMouseConn=nil end
+    UIS.MouseBehavior = Enum.MouseBehavior.Default
+    Cam.CameraType = Enum.CameraType.Custom
     local char=LP.Character
     if char then local h=char:FindFirstChildOfClass("Humanoid"); if h then Cam.CameraSubject=h end end
 end
 
 local _fcPart,_fcConn=nil,nil
+local _fcMouseConn=nil   -- captura mouse para rotação
+local _fcYaw,_fcPitch=0,0  -- ângulos da câmera na FreeCam
+
 local function EnableFreeCam()
     if _fcConn then return end
+    -- Desliga ThirdPerson se estiver ativo (conflitam pelo mouse)
+    if Cfg.Misc.ThirdPerson then
+        Cfg.Misc.ThirdPerson = false
+        DisableThirdPerson()
+    end
+    local char=LP.Character
+    local hum=char and char:FindFirstChildOfClass("Humanoid")
+
+    -- Congela o personagem: PlatformStand impede input de movimento
+    if hum then hum.PlatformStand=true end
+
     _fcPart=Instance.new("Part"); _fcPart.Anchored=true; _fcPart.CanCollide=false
     _fcPart.Transparency=1; _fcPart.Size=Vector3.new(0.1,0.1,0.1)
     _fcPart.CFrame=Cam.CFrame; _fcPart.Parent=Workspace
+
+    -- Inicializa ângulos a partir da câmera atual
+    local _,ry,_ = Cam.CFrame:ToEulerAnglesYXZ()
+    local rx = math.asin(Cam.CFrame.LookVector.Y)
+    _fcYaw   = ry
+    _fcPitch = -rx
+
     Cam.CameraSubject=_fcPart; Cam.CameraType=Enum.CameraType.Scriptable
+
+    -- Captura movimento do mouse para rotação da câmera
+    _fcMouseConn = UIS.InputChanged:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local sens = 0.003
+            _fcYaw   = _fcYaw   - inp.Delta.X * sens
+            _fcPitch = math.clamp(_fcPitch - inp.Delta.Y * sens, -math.pi/2 + 0.05, math.pi/2 - 0.05)
+        end
+    end)
+    -- Trava o mouse no centro da tela
+    UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+
     _fcConn=AC(RunService.RenderStepped:Connect(function()
         if not Cfg.Misc.FreeCam then return end
-        local spd=Cfg.Misc.FCamSpeed*0.6; local mv=Vector3.zero
-        if UIS:IsKeyDown(Enum.KeyCode.W) then mv=mv+Cam.CFrame.LookVector*spd end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then mv=mv-Cam.CFrame.LookVector*spd end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then mv=mv-Cam.CFrame.RightVector*spd end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then mv=mv+Cam.CFrame.RightVector*spd end
-        if UIS:IsKeyDown(Enum.KeyCode.E) then mv=mv+Vector3.new(0,spd,0) end
-        if UIS:IsKeyDown(Enum.KeyCode.Q) then mv=mv-Vector3.new(0,spd,0) end
-        _fcPart.CFrame=_fcPart.CFrame+mv; Cam.CFrame=Cam.CFrame+mv
+        local spd = Cfg.Misc.FCamSpeed * 0.6
+
+        -- Reconstrói CFrame a partir dos ângulos acumulados
+        local rot = CFrame.fromEulerAnglesYXZ(_fcPitch, _fcYaw, 0)
+        local fwd  = rot.LookVector
+        local rgt  = rot.RightVector
+
+        local mv = Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then mv = mv + fwd  * spd end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then mv = mv - fwd  * spd end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then mv = mv - rgt  * spd end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then mv = mv + rgt  * spd end
+        if UIS:IsKeyDown(Enum.KeyCode.E) then mv = mv + Vector3.new(0,spd,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.Q) then mv = mv - Vector3.new(0,spd,0) end
+
+        local newPos = _fcPart.Position + mv
+        _fcPart.CFrame = CFrame.new(newPos) * rot
+        Cam.CFrame = _fcPart.CFrame
     end))
 end
+
 local function DisableFreeCam()
     if _fcConn then _fcConn:Disconnect(); _fcConn=nil end
+    if _fcMouseConn then _fcMouseConn:Disconnect(); _fcMouseConn=nil end
     if _fcPart then pcall(function() _fcPart:Destroy() end); _fcPart=nil end
-    Cam.CameraType=Enum.CameraType.Custom
+    -- Restaura mouse e câmera
+    UIS.MouseBehavior = Enum.MouseBehavior.Default
+    Cam.CameraType = Enum.CameraType.Custom
     local char=LP.Character
-    if char then local h=char:FindFirstChildOfClass("Humanoid"); if h then Cam.CameraSubject=h end end
+    if char then
+        local hum=char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand=false end
+        local h=char:FindFirstChildOfClass("Humanoid"); if h then Cam.CameraSubject=h end
+    end
 end
 
 -- ============================================================
@@ -1244,6 +1419,67 @@ local function StartClickTp()
     end))
 end
 
+-- ============================================================
+-- GRAB TOOL — robusto para jogos com sistemas customizados
+-- Tenta 4 métodos em sequência até um funcionar:
+--   1. .Parent direto (método padrão)
+--   2. Humanoid:EquipTool() — API oficial do Roblox
+--   3. FireServer em RemoteEvent de pickup se encontrado no jogo
+--   4. Teleporta o char até a tool e usa Humanoid:EquipTool
+-- ============================================================
+local function _TryGrab(tool)
+    if not tool or not tool.Parent then return false end
+    local bp   = LP:FindFirstChild("Backpack")
+    local char = LP.Character
+    local hum  = char and char:FindFirstChildOfClass("Humanoid")
+
+    -- Método 1: parent direto para backpack
+    local ok1 = pcall(function() tool.Parent = bp end)
+    if ok1 and (tool.Parent == bp or (char and tool.Parent == char)) then return true end
+
+    -- Método 2: EquipTool via Humanoid
+    if hum then
+        local ok2 = pcall(function() hum:EquipTool(tool) end)
+        if ok2 and tool.Parent == char then return true end
+    end
+
+    -- Método 3: procura RemoteEvent de "pickup" / "grab" no jogo
+    local function findPickupRemote()
+        for _,v in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if v:IsA("RemoteEvent") then
+                local nm = v.Name:lower()
+                if nm:find("pickup",1,true) or nm:find("grab",1,true) or nm:find("equip",1,true) or nm:find("collect",1,true) then
+                    return v
+                end
+            end
+        end
+        return nil
+    end
+    local remote = findPickupRemote()
+    if remote then
+        pcall(function() remote:FireServer(tool) end)
+        task.wait(0.1)
+        if tool.Parent == bp or (char and tool.Parent == char) then return true end
+    end
+
+    -- Método 4: teleporta até a tool e tenta novamente
+    if hum and char then
+        local hrp  = char:FindFirstChild("HumanoidRootPart")
+        local part = tool:FindFirstChildOfClass("BasePart")
+        if hrp and part then
+            local origCF = hrp.CFrame
+            pcall(function() hrp.CFrame = part.CFrame + Vector3.new(0,3,0) end)
+            task.wait(0.08)
+            pcall(function() hum:EquipTool(tool) end)
+            task.wait(0.08)
+            pcall(function() hrp.CFrame = origCF end)
+            if tool.Parent == char or tool.Parent == bp then return true end
+        end
+    end
+
+    return false
+end
+
 local function GrabNearestTool()
     local char=LP.Character; if not char then return nil end
     local hrp=char:FindFirstChild("HumanoidRootPart"); if not hrp then return nil end
@@ -1257,13 +1493,33 @@ local function GrabNearestTool()
             end
         end
     end
-    if best then local bp=LP:FindFirstChild("Backpack"); if bp then best.Parent=bp; return best.Name end end
-    return nil
+    if not best then return nil end
+    local name = best.Name
+    local ok = _TryGrab(best)
+    return ok and name or nil
 end
+
 local function GetMapTools()
     local out={}
     for _,v in ipairs(Workspace:GetDescendants()) do
-        if v:IsA("Tool") and not v:IsDescendantOf(Players) then out[#out+1]={name=v.Name,tool=v} end
+        -- filtra tools que já estão sendo usadas por outros players
+        if v:IsA("Tool") and not v:IsDescendantOf(Players) then
+            local part = v:FindFirstChildOfClass("BasePart")
+            -- só lista tools que têm uma parte física (estão no mundo, não em scripts)
+            if part then
+                out[#out+1]={name=v.Name, tool=v, dist=0}
+            end
+        end
+    end
+    -- ordena por distância do player
+    local char = LP.Character
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        for _,entry in ipairs(out) do
+            local part = entry.tool:FindFirstChildOfClass("BasePart")
+            entry.dist = part and (part.Position - hrp.Position).Magnitude or math.huge
+        end
+        table.sort(out, function(a,b) return a.dist < b.dist end)
     end
     return out
 end
@@ -1969,12 +2225,21 @@ do
             local gb=Instance.new("TextButton",row); gb.Text="Pegar"; gb.Size=UDim2.new(0,52,0,18); gb.Position=UDim2.new(1,-55,0.5,-9); gb.BackgroundColor3=C.red; gb.TextColor3=C.wht; gb.Font=FB; gb.TextSize=10; gb.BorderSizePixel=0; Instance.new("UICorner",gb).CornerRadius=UDim.new(0,3)
             local cap=entry.tool
             gb.MouseButton1Click:Connect(function()
-                local bp=LP:FindFirstChild("Backpack")
-                if bp then pcall(function() cap.Parent=bp end); gs("✓ "..entry.name,C.green) else gs("❌ Falhou",C.redH) end
+                gs("⏳ Tentando...", C.orange)
+                task.spawn(function()
+                    local ok = _TryGrab(cap)
+                    gs(ok and "✓ "..entry.name or "❌ Falhou / Bloqueado", ok and C.green or C.redH)
+                end)
             end)
         end
     end
-    Btn(UtilP,"🔧 Pegar Mais Próxima",12,function() local n=GrabNearestTool(); gs(n and "✓ "..n or "❌ Nenhuma",n and C.green or C.redH) end,Color3.fromRGB(20,50,20))
+    Btn(UtilP,"🔧 Pegar Mais Próxima",12,function()
+    gs("⏳ Tentando...", C.orange)
+    task.spawn(function()
+        local n=GrabNearestTool()
+        gs(n and "✓ "..n or "❌ Nenhuma / Não pegável", n and C.green or C.redH)
+    end)
+end,Color3.fromRGB(20,50,20))
     Btn(UtilP,"↺ Listar Tools do Mapa",13,RefTools,Color3.fromRGB(12,35,55),C.blueH)
 end
 Sep(UtilP,15); SL(UtilP,"INFINITE YIELD",16)
