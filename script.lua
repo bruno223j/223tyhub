@@ -754,24 +754,119 @@ local function UpdateFOVCircle()
 end
 
 -- ============================================================
--- NO RECOIL
+-- NO RECOIL — cobertura máxima
+-- Abordagem 1: zeragem de valores nomeados (sistemas baseados em instâncias)
+-- Abordagem 2: intercepta câmera — reseta rotação X entre frames
+--              (funciona em jogos que movem a cam diretamente via CFrame)
+-- Abordagem 3: intercepta HRP BodyAngularVelocity/BodyGyro de recoil
+-- Abordagem 4: zeragem de atributos de recoil no tool/char
 -- ============================================================
-local _nrConn=nil
+local _nrConn     = nil
+local _nrCamLastY = nil  -- yaw da câmera antes do tiro (para detectar kick vertical)
+local _nrCamLastX = nil  -- pitch salvo
+
+-- Keywords de recoil ampliadas
+local NR_KEYS = {
+    "recoil","kickback","kick","spread","sway","shake","bump","punch",
+    "camshake","camkick","cameraoffset","viewkick","viewpunch",
+    "weaponkick","gunbob","muzzlekick","kickforce","recoilforce",
+}
+
+local function _IsRecoilValue(v)
+    local nm = v.Name:lower()
+    for _,k in ipairs(NR_KEYS) do
+        if nm:find(k,1,true) then return true end
+    end
+    return false
+end
+
+local function _ZeroRecoilValues(obj)
+    if not obj then return end
+    for _,v in ipairs(obj:GetDescendants()) do
+        if _IsRecoilValue(v) then
+            pcall(function()
+                if     v:IsA("Vector3Value") then v.Value = Vector3.zero
+                elseif v:IsA("CFrameValue")  then v.Value = CFrame.identity
+                elseif v:IsA("NumberValue")  then v.Value = 0
+                elseif v:IsA("IntValue")     then v.Value = 0
+                end
+            end)
+            -- atributos numéricos
+            pcall(function()
+                if typeof(v:GetAttribute(v.Name)) == "number" then
+                    v:SetAttribute(v.Name, 0)
+                end
+            end)
+        end
+        -- atributos de recoil diretamente na instância
+        pcall(function()
+            for attr, val in pairs(v:GetAttributes()) do
+                local an = attr:lower()
+                for _,k in ipairs(NR_KEYS) do
+                    if an:find(k,1,true) then
+                        if type(val)=="number" then v:SetAttribute(attr,0)
+                        elseif typeof(val)=="Vector3" then v:SetAttribute(attr,Vector3.zero)
+                        elseif typeof(val)=="CFrame"  then v:SetAttribute(attr,CFrame.identity)
+                        end
+                        break
+                    end
+                end
+            end
+        end)
+    end
+end
+
 local function StartWeaponLoop()
     if _nrConn then return end
-    _nrConn=AC(RunService.RenderStepped:Connect(function()
+
+    -- Salva pitch atual ao começar
+    local function saveCamPitch()
         if not Cfg.Aim.NoRecoil then return end
-        local char=LP.Character; if not char then return end
+        local cf = Cam.CFrame
+        _nrCamLastY = select(2, cf:ToEulerAnglesYXZ())
+        _nrCamLastX = math.asin(cf.LookVector.Y)
+    end
+
+    _nrConn = AC(RunService.RenderStepped:Connect(function()
+        if not Cfg.Aim.NoRecoil then
+            _nrCamLastY = nil; _nrCamLastX = nil
+            return
+        end
+        local char = LP.Character; if not char then return end
+
+        -- ── Abordagem 1: valores de instância ──
         for _,tool in ipairs(char:GetChildren()) do
-            if not tool:IsA("Tool") then continue end
-            for _,v in ipairs(tool:GetDescendants()) do
-                local nm=v.Name:lower()
-                if nm:find("recoil",1,true) or nm:find("kickback",1,true) or nm:find("kick",1,true) then
-                    pcall(function()
-                        if     v:IsA("Vector3Value") then v.Value=Vector3.zero
-                        elseif v:IsA("NumberValue")  then v.Value=0
-                        elseif v:IsA("CFrameValue")  then v.Value=CFrame.identity end
-                    end)
+            if tool:IsA("Tool") then _ZeroRecoilValues(tool) end
+        end
+        -- também no char (alguns jogos colocam o recoil direto no personagem)
+        _ZeroRecoilValues(char)
+
+        -- ── Abordagem 2: congelar o kick vertical da câmera ──
+        -- Ao atirar, a câmera sobe bruscamente; travamos o pitch
+        local cf = Cam.CFrame
+        local _,cy,_ = cf:ToEulerAnglesYXZ()
+        local pitch = math.asin(math.clamp(cf.LookVector.Y, -1, 1))
+
+        if _nrCamLastY ~= nil then
+            -- Se a câmera foi empurrada para cima mais de 0.003 rad em 1 frame = recoil
+            local dpitch = pitch - _nrCamLastX
+            if dpitch > 0.003 then
+                -- cancela o kick: restaura o pitch anterior
+                local newCF = CFrame.new(cf.Position)
+                             * CFrame.fromEulerAnglesYXZ(_nrCamLastX, cy, 0)
+                pcall(function() Cam.CFrame = newCF end)
+            end
+        end
+
+        _nrCamLastY = cy
+        _nrCamLastX = pitch
+
+        -- ── Abordagem 3: remove BodyAngularVelocity/BodyGyro de recoil no HRP ──
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            for _,v in ipairs(hrp:GetChildren()) do
+                if (v:IsA("BodyAngularVelocity") or v:IsA("BodyGyro")) and _IsRecoilValue(v) then
+                    pcall(function() v:Destroy() end)
                 end
             end
         end
@@ -779,90 +874,138 @@ local function StartWeaponLoop()
 end
 
 -- ============================================================
--- INFINITE AMMO — cobertura máxima de jogos
+-- INFINITE AMMO — cobertura máxima (v2)
 -- Estratégia multicamada:
---   1. .Changed em todos os valores de ammo conhecidos
---   2. Polling leve (Heartbeat) para jogos que resetam via server a cada frame
---   3. Keywords expandidas para cobrir mais nomes de variáveis
---   4. setreadonly/rawset quando disponível (bypassa metatables)
---   5. Escaneia módulos/scripts filhos da tool em busca de tabelas internas
+--   1. Instâncias nomeadas (IntValue/NumberValue) com keywords expandidas
+--   2. Atributos do Roblox no tool/char (API moderna de atributos)
+--   3. TODOS os IntValue/NumberValue com valor baixo (fallback cego)
+--   4. Polling agressivo a cada frame para jogos server-authoritative
+--   5. Hooks de .Changed + DescendantAdded para cobertura em tempo real
+--   6. Scan de ObjectValue/StringValue que apontam para outros objetos
 -- ============================================================
-local _iaConns   = {}   -- [tool] = {connections}
+local _iaConns    = {}
 local _iaCharConn = nil
 local _iaBpConn   = nil
-local _iaHBConn   = nil  -- heartbeat fallback
+local _iaHBConn   = nil
+local _iaHBTick   = 0
 
--- Keywords expandidas: cobre a maioria dos sistemas de ammo do Roblox
-local AMMO_KEYWORDS = {
+-- Keywords expandidas (ammo + recarga)
+local AMMO_KW = {
     "ammo","clip","bullets","mag","magazine","reserve","rounds","count",
     "ammocount","currentammo","maxammo","totalammo","bulletcount",
     "remainingammo","ammonumber","ammoremaining","ammorounds",
-    "cartridge","shell","charge","capacity",
+    "cartridge","shell","charge","capacity","fuel","energy","mana",
+    "load","loaded","ingun","inmagazine","currentclip","clipsize",
+    "firepower","munition","projectile","shot","shots","fires",
+    "firecount","shootcount","remaining",
 }
 
-local function _IsAmmoValue(v)
-    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
-    local nm = v.Name:lower()
-    for _,kw in ipairs(AMMO_KEYWORDS) do
+-- Verifica se o nome bate com algum keyword de ammo
+local function _isAmmoName(nm)
+    nm = nm:lower()
+    for _,kw in ipairs(AMMO_KW) do
         if nm:find(kw,1,true) then return true end
     end
     return false
 end
 
--- Tenta setar o valor usando vários métodos para bypass de proteções
-local function _SetAmmoVal(v, target)
-    -- método 1: direto
-    pcall(function() v.Value = target end)
-    -- método 2: rawset (bypassa __newindex em userdata limitado)
-    pcall(function() rawset(v, "Value", target) end)
-    -- método 3: setreadonly se disponível (ex: syn/krnl)
-    if setreadonly then
-        pcall(function()
-            setreadonly(v, false)
-            v.Value = target
-        end)
-    end
+-- Tenta setar usando todos os métodos disponíveis
+local function _ForceSet(v, val)
+    pcall(function() v.Value = val end)
+    pcall(function() rawset(v,"Value",val) end)
+    if setreadonly then pcall(function() setreadonly(v,false); v.Value=val end) end
 end
 
--- Coleta TODOS os IntValue/NumberValue com keywords de ammo de um tool,
--- incluindo dentro de ModuleScript tables via getupvalues quando disponível
-local function _FindAmmoValues(tool)
-    local found = {}
-    -- scan padrão de instâncias descendentes
-    for _,v in ipairs(tool:GetDescendants()) do
-        if _IsAmmoValue(v) then
-            found[#found+1] = v
+-- Força via atributos Roblox (API moderna — muitos jogos usam isso)
+local function _ForceAttribs(inst, val)
+    pcall(function()
+        for attr, cur in pairs(inst:GetAttributes()) do
+            if type(cur)=="number" and _isAmmoName(attr) then
+                inst:SetAttribute(attr, val)
+            end
         end
+    end)
+end
+
+-- Scan completo de uma instância e seus descendentes
+-- Modo "cego": além das keywords, força qualquer IntValue/NumberValue
+-- com valor entre 0 e 500 (heurística de ammo — evita setar HP/score)
+local function _ScanAndForce(inst, aggressive)
+    if not inst then return end
+    for _,v in ipairs(inst:GetDescendants()) do
+        pcall(function()
+            if v:IsA("IntValue") or v:IsA("NumberValue") then
+                local nm = v.Name:lower()
+                local isAmmo = _isAmmoName(nm)
+                -- modo agressivo: também força valores baixos com nomes suspeitos
+                local isSuspect = aggressive and v.Value >= 0 and v.Value <= 500
+                    and not nm:find("health",1,true) and not nm:find("hp",1,true)
+                    and not nm:find("score",1,true) and not nm:find("cash",1,true)
+                    and not nm:find("coin",1,true) and not nm:find("point",1,true)
+                    and not nm:find("level",1,true) and not nm:find("exp",1,true)
+                    and not nm:find("damage",1,true) and not nm:find("speed",1,true)
+                if isAmmo or isSuspect then
+                    _ForceSet(v, 9999)
+                end
+            end
+        end)
+        -- atributos em qualquer descendente
+        _ForceAttribs(v, 9999)
     end
-    return found
+    -- atributos na raiz também
+    _ForceAttribs(inst, 9999)
+end
+
+local function _IsAmmoValue(v)
+    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
+    return _isAmmoName(v.Name)
 end
 
 local function _HookTool(tool)
     if _iaConns[tool] then return end
     local conns = {}
 
+    -- Força imediato no scan completo (modo agressivo)
+    _ScanAndForce(tool, true)
+
+    -- Hook .Changed em todos os valores de ammo
     local function hookVal(v)
-        _SetAmmoVal(v, 9999)
+        _ForceSet(v, 9999)
         local c = v.Changed:Connect(function(val)
             if Cfg.Aim.InfAmmo and val < 9999 then
-                _SetAmmoVal(v, 9999)
+                _ForceSet(v, 9999)
             end
         end)
         conns[#conns+1] = c
     end
 
-    for _,v in ipairs(_FindAmmoValues(tool)) do
-        hookVal(v)
+    for _,v in ipairs(tool:GetDescendants()) do
+        if _IsAmmoValue(v) then hookVal(v) end
     end
 
-    -- observa descendentes adicionados depois (jogos que criam valores dinamicamente)
+    -- Observa novos descendentes (jogos que criam valores ao equipar)
     local dc = tool.DescendantAdded:Connect(function(v)
         if not Cfg.Aim.InfAmmo then return end
-        if _IsAmmoValue(v) then
-            task.defer(function() hookVal(v) end)
-        end
+        task.defer(function()
+            if _IsAmmoValue(v) then hookVal(v) end
+            -- força atributos no novo descendente
+            _ForceAttribs(v, 9999)
+        end)
     end)
     conns[#conns+1] = dc
+
+    -- AttributeChanged no próprio tool (jogos que usam atributos)
+    local ac2 = tool.AttributeChanged:Connect(function(attr)
+        if not Cfg.Aim.InfAmmo then return end
+        if _isAmmoName(attr) then
+            pcall(function()
+                if type(tool:GetAttribute(attr))=="number" then
+                    tool:SetAttribute(attr, 9999)
+                end
+            end)
+        end
+    end)
+    conns[#conns+1] = ac2
 
     _iaConns[tool] = conns
 end
@@ -878,6 +1021,7 @@ local function _HookChar(char)
     for tool in pairs(_iaConns) do _UnhookTool(tool) end
     if not char then return end
     local bp = LP:FindFirstChild("Backpack")
+
     local function hookContainer(cont)
         if not cont then return end
         for _,v in ipairs(cont:GetChildren()) do
@@ -886,6 +1030,7 @@ local function _HookChar(char)
     end
     hookContainer(char)
     hookContainer(bp)
+
     if _iaCharConn then pcall(function() _iaCharConn:Disconnect() end) end
     _iaCharConn = char.ChildAdded:Connect(function(v)
         if v:IsA("Tool") and Cfg.Aim.InfAmmo then _HookTool(v) end
@@ -898,9 +1043,6 @@ local function _HookChar(char)
     end
 end
 
--- Fallback de polling: cobre jogos que resetam ammo server-side a cada tick
--- Roda a cada ~10 frames (~0.16s) para não sobrecarregar
-local _iaHBTick = 0
 local function StartInfAmmo()
     AC(LP.CharacterAdded:Connect(function(c)
         task.wait(0.5)
@@ -908,22 +1050,30 @@ local function StartInfAmmo()
     end))
     if LP.Character and Cfg.Aim.InfAmmo then _HookChar(LP.Character) end
 
-    -- Polling leve como fallback (1x a cada 10 frames ~0.16s)
+    -- Polling a cada 3 frames (~0.05s): mais agressivo para cobrir jogos
+    -- que resetam ammo server-side continuamente
     _iaHBConn = AC(RunService.Heartbeat:Connect(function()
         if not Cfg.Aim.InfAmmo then return end
         _iaHBTick = _iaHBTick + 1
-        if _iaHBTick % 10 ~= 0 then return end
+        if _iaHBTick % 3 ~= 0 then return end
         local char = LP.Character
         local bp   = LP:FindFirstChild("Backpack")
         local conts = {}
         if char then conts[#conts+1] = char end
-        if bp   then conts[#conts+1] = bp   end
+        if bp   then conts[#conts+1] = bp end
         for _,cont in ipairs(conts) do
             for _,tool in ipairs(cont:GetChildren()) do
                 if not tool:IsA("Tool") then continue end
-                for _,v in ipairs(_FindAmmoValues(tool)) do
-                    if v.Value < 9999 then _SetAmmoVal(v, 9999) end
+                -- força todos os valores conhecidos + atributos
+                for _,v in ipairs(tool:GetDescendants()) do
+                    pcall(function()
+                        if (v:IsA("IntValue") or v:IsA("NumberValue")) and _isAmmoName(v.Name) and v.Value < 9999 then
+                            _ForceSet(v, 9999)
+                        end
+                    end)
+                    _ForceAttribs(v, 9999)
                 end
+                _ForceAttribs(tool, 9999)
             end
         end
     end))
