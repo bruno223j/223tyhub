@@ -355,7 +355,7 @@ local Cfg = {
         FOV=150, ShowFOV=false, UseFOV=false, FOVFollow=false,
         AimPart="Head", Smoothness=8,
         AimKey=Enum.KeyCode.E, AimKeyName="E",
-        AimStrength=70, Blacklist={}, PriorityEnabled=false, Priority="Mais Próximo",
+        AimStrength=70, Blacklist={},
     },
     Trigger = { Enabled=false, TeamCheck=false, Delay=80, AutoBot=false,
                 ClickControl=false, ClickCount=3,
@@ -622,20 +622,10 @@ local function ClosestTarget()
         if not onScreen then continue end
         local d = (sp - center).Magnitude
         if Cfg.Aim.UseFOV and d > Cfg.Aim.FOV then continue end
-        local score
-        if Cfg.Aim.PriorityEnabled then
-            local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-            local part2 = p.Character:FindFirstChild(Cfg.Aim.AimPart) or p.Character:FindFirstChild("HumanoidRootPart")
-            local wd = myHRP and part2 and (part2.Position - myHRP.Position).Magnitude or d
-            score = Cfg.Aim.Priority == "Mais Próximo" and wd or -wd
-        else
-            score = d
-        end
-        if score < bestD then bestD=score; best=p end
+        if d < bestD then bestD=d; best=p end
     end
     return best
 end
-
 
 -- ============================================================
 -- ESP OBJECTS
@@ -764,88 +754,24 @@ local function UpdateFOVCircle()
 end
 
 -- ============================================================
--- NO RECOIL — cobertura máxima
--- Abordagem 1: zeragem de valores/atributos nomeados na tool e no char
--- Abordagem 2: intercepta câmera — anula kick vertical a cada frame
---              (cobre jogos que movem Cam.CFrame diretamente ao atirar)
--- Abordagem 3: remove BodyAngularVelocity/BodyGyro de recoil no HRP
+-- NO RECOIL
 -- ============================================================
-local _nrConn     = nil
-local _nrCamLastX = nil  -- pitch salvo no frame anterior
-
-local NR_KEYS = {
-    "recoil","kickback","kick","spread","sway","shake","bump","punch",
-    "camshake","camkick","cameraoffset","viewkick","viewpunch",
-    "weaponkick","gunbob","muzzlekick","kickforce","recoilforce",
-}
-
-local function _IsRecoilName(nm)
-    nm = nm:lower()
-    for _,k in ipairs(NR_KEYS) do
-        if nm:find(k,1,true) then return true end
-    end
-    return false
-end
-
-local function _ZeroRecoilValues(obj)
-    if not obj then return end
-    for _,v in ipairs(obj:GetDescendants()) do
-        pcall(function()
-            if _IsRecoilName(v.Name) then
-                if     v:IsA("Vector3Value") then v.Value = Vector3.zero
-                elseif v:IsA("CFrameValue")  then v.Value = CFrame.identity
-                elseif v:IsA("NumberValue")  then v.Value = 0
-                elseif v:IsA("IntValue")     then v.Value = 0
-                end
-            end
-        end)
-    end
-end
-
+local _nrConn=nil
 local function StartWeaponLoop()
     if _nrConn then return end
-    _nrCamLastX = nil
-
-    _nrConn = AC(RunService.RenderStepped:Connect(function()
-        if not Cfg.Aim.NoRecoil then
-            _nrCamLastX = nil
-            return
-        end
-        local char = LP.Character; if not char then return end
-
-        -- Abordagem 1: valores e atributos nomeados na tool e no char
+    _nrConn=AC(RunService.RenderStepped:Connect(function()
+        if not Cfg.Aim.NoRecoil then return end
+        local char=LP.Character; if not char then return end
         for _,tool in ipairs(char:GetChildren()) do
-            if tool:IsA("Tool") then _ZeroRecoilValues(tool) end
-        end
-        _ZeroRecoilValues(char)
-
-        -- Abordagem 2: anula kick vertical da câmera
-        -- Só intercepta se FreeCam e ThirdPerson estiverem desligados
-        if not Cfg.Misc.FreeCam and not Cfg.Misc.ThirdPerson then
-            local cf    = Cam.CFrame
-            local pitch = math.asin(math.clamp(cf.LookVector.Y, -1, 1))
-            if _nrCamLastX ~= nil then
-                local dp = pitch - _nrCamLastX
-                if dp > 0.003 then
-                    local _,cy,_ = cf:ToEulerAnglesYXZ()
+            if not tool:IsA("Tool") then continue end
+            for _,v in ipairs(tool:GetDescendants()) do
+                local nm=v.Name:lower()
+                if nm:find("recoil",1,true) or nm:find("kickback",1,true) or nm:find("kick",1,true) then
                     pcall(function()
-                        Cam.CFrame = CFrame.new(cf.Position)
-                                   * CFrame.fromEulerAnglesYXZ(_nrCamLastX, cy, 0)
+                        if     v:IsA("Vector3Value") then v.Value=Vector3.zero
+                        elseif v:IsA("NumberValue")  then v.Value=0
+                        elseif v:IsA("CFrameValue")  then v.Value=CFrame.identity end
                     end)
-                    pitch = _nrCamLastX
-                end
-            end
-            _nrCamLastX = pitch
-        else
-            _nrCamLastX = nil
-        end
-
-        -- Abordagem 3: remove instâncias de recoil no HRP
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            for _,v in ipairs(hrp:GetChildren()) do
-                if (v:IsA("BodyAngularVelocity") or v:IsA("BodyGyro")) and _IsRecoilName(v.Name) then
-                    pcall(function() v:Destroy() end)
                 end
             end
         end
@@ -853,81 +779,88 @@ local function StartWeaponLoop()
 end
 
 -- ============================================================
--- INFINITE AMMO — cobertura máxima (v2)
+-- INFINITE AMMO — cobertura máxima de jogos
 -- Estratégia multicamada:
---   1. .Changed em valores de instância com keywords expandidas
---   2. AttributeChanged: API moderna de atributos do Roblox
---   3. Scan + force ao equipar a tool
---   4. Polling a cada 6 frames (~0.1s) como fallback
+--   1. .Changed em todos os valores de ammo conhecidos
+--   2. Polling leve (Heartbeat) para jogos que resetam via server a cada frame
+--   3. Keywords expandidas para cobrir mais nomes de variáveis
+--   4. setreadonly/rawset quando disponível (bypassa metatables)
+--   5. Escaneia módulos/scripts filhos da tool em busca de tabelas internas
 -- ============================================================
-local _iaConns    = {}
+local _iaConns   = {}   -- [tool] = {connections}
 local _iaCharConn = nil
 local _iaBpConn   = nil
-local _iaHBConn   = nil
-local _iaHBTick   = 0
+local _iaHBConn   = nil  -- heartbeat fallback
 
-local AMMO_KW = {
+-- Keywords expandidas: cobre a maioria dos sistemas de ammo do Roblox
+local AMMO_KEYWORDS = {
     "ammo","clip","bullets","mag","magazine","reserve","rounds","count",
     "ammocount","currentammo","maxammo","totalammo","bulletcount",
     "remainingammo","ammonumber","ammoremaining","ammorounds",
-    "cartridge","shell","charge","capacity","fuel","energy",
-    "load","loaded","ingun","inmagazine","currentclip","clipsize",
-    "firecount","shootcount","remaining","shot","shots",
+    "cartridge","shell","charge","capacity",
 }
 
-local function _isAmmoName(nm)
-    nm = nm:lower()
-    for _,kw in ipairs(AMMO_KW) do
+local function _IsAmmoValue(v)
+    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
+    local nm = v.Name:lower()
+    for _,kw in ipairs(AMMO_KEYWORDS) do
         if nm:find(kw,1,true) then return true end
     end
     return false
 end
 
-local function _ForceSet(v, val)
-    pcall(function() v.Value = val end)
-    pcall(function() rawset(v,"Value",val) end)
-    if setreadonly then pcall(function() setreadonly(v,false); v.Value=val end) end
-end
-
-local function _IsAmmoValue(v)
-    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
-    return _isAmmoName(v.Name)
-end
-
-local function _ScanAndForce(inst)
-    if not inst then return end
-    for _,v in ipairs(inst:GetDescendants()) do
+-- Tenta setar o valor usando vários métodos para bypass de proteções
+local function _SetAmmoVal(v, target)
+    -- método 1: direto
+    pcall(function() v.Value = target end)
+    -- método 2: rawset (bypassa __newindex em userdata limitado)
+    pcall(function() rawset(v, "Value", target) end)
+    -- método 3: setreadonly se disponível (ex: syn/krnl)
+    if setreadonly then
         pcall(function()
-            if (v:IsA("IntValue") or v:IsA("NumberValue")) and _isAmmoName(v.Name) then
-                _ForceSet(v, 9999)
-            end
+            setreadonly(v, false)
+            v.Value = target
         end)
     end
+end
+
+-- Coleta TODOS os IntValue/NumberValue com keywords de ammo de um tool,
+-- incluindo dentro de ModuleScript tables via getupvalues quando disponível
+local function _FindAmmoValues(tool)
+    local found = {}
+    -- scan padrão de instâncias descendentes
+    for _,v in ipairs(tool:GetDescendants()) do
+        if _IsAmmoValue(v) then
+            found[#found+1] = v
+        end
+    end
+    return found
 end
 
 local function _HookTool(tool)
     if _iaConns[tool] then return end
     local conns = {}
 
-    _ScanAndForce(tool)
-
     local function hookVal(v)
-        _ForceSet(v, 9999)
+        _SetAmmoVal(v, 9999)
         local c = v.Changed:Connect(function(val)
-            if Cfg.Aim.InfAmmo and val < 9999 then _ForceSet(v, 9999) end
+            if Cfg.Aim.InfAmmo and val < 9999 then
+                _SetAmmoVal(v, 9999)
+            end
         end)
         conns[#conns+1] = c
     end
 
-    for _,v in ipairs(tool:GetDescendants()) do
-        if _IsAmmoValue(v) then hookVal(v) end
+    for _,v in ipairs(_FindAmmoValues(tool)) do
+        hookVal(v)
     end
 
+    -- observa descendentes adicionados depois (jogos que criam valores dinamicamente)
     local dc = tool.DescendantAdded:Connect(function(v)
         if not Cfg.Aim.InfAmmo then return end
-        task.defer(function()
-            if _IsAmmoValue(v) then hookVal(v) end
-        end)
+        if _IsAmmoValue(v) then
+            task.defer(function() hookVal(v) end)
+        end
     end)
     conns[#conns+1] = dc
 
@@ -965,6 +898,9 @@ local function _HookChar(char)
     end
 end
 
+-- Fallback de polling: cobre jogos que resetam ammo server-side a cada tick
+-- Roda a cada ~10 frames (~0.16s) para não sobrecarregar
+local _iaHBTick = 0
 local function StartInfAmmo()
     AC(LP.CharacterAdded:Connect(function(c)
         task.wait(0.5)
@@ -972,10 +908,11 @@ local function StartInfAmmo()
     end))
     if LP.Character and Cfg.Aim.InfAmmo then _HookChar(LP.Character) end
 
+    -- Polling leve como fallback (1x a cada 10 frames ~0.16s)
     _iaHBConn = AC(RunService.Heartbeat:Connect(function()
         if not Cfg.Aim.InfAmmo then return end
         _iaHBTick = _iaHBTick + 1
-        if _iaHBTick % 6 ~= 0 then return end
+        if _iaHBTick % 10 ~= 0 then return end
         local char = LP.Character
         local bp   = LP:FindFirstChild("Backpack")
         local conts = {}
@@ -984,18 +921,15 @@ local function StartInfAmmo()
         for _,cont in ipairs(conts) do
             for _,tool in ipairs(cont:GetChildren()) do
                 if not tool:IsA("Tool") then continue end
-                for _,v in ipairs(tool:GetDescendants()) do
-                    pcall(function()
-                        if (v:IsA("IntValue") or v:IsA("NumberValue")) and _isAmmoName(v.Name) and v.Value < 9999 then
-                            _ForceSet(v, 9999)
-                        end
-                    end)
+                for _,v in ipairs(_FindAmmoValues(tool)) do
+                    if v.Value < 9999 then _SetAmmoVal(v, 9999) end
                 end
             end
         end
     end))
 end
 
+-- ============================================================
 -- TRIGGERBOT
 -- ClickControl / One-Shot: modos de disparo do TriggerBot
 -- ============================================================
@@ -1794,7 +1728,6 @@ StartWeaponLoop(); StartInfAmmo(); StartClickTp(); StartChatLog()
 EnableAquaman(); EnableNoFallDmg()
 
 -- ============================================================
--- ============================================================
 -- TELAGEM BYPASS (Panic Key)
 -- Esconde/mostra a GUI completa + drawings do ESP/FOV.
 -- Quando ativo: GUI some, ESP drawings ficam invisíveis,
@@ -2129,10 +2062,7 @@ Toggle(AimP,"Infinite Ammo",21,function() return Cfg.Aim.InfAmmo end,function(v)
     end
 end)
 KB(AimP,"Aim Key (segurar)",23,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
-Sep(AimP,24); SL(AimP,"PRIORIDADE DE ALVO",25,C.orange)
-Toggle(AimP,"Ativar Prioridade",26,function() return Cfg.Aim.PriorityEnabled end,function(v) Cfg.Aim.PriorityEnabled=v end,nil,C.orange)
-Sel(AimP,"Critério",{"Mais Próximo","Mais Longe"},"Mais Próximo",28,function(v) Cfg.Aim.Priority=v end)
-PLWidget(AimP,30,"LISTA DE EXCLUSÃO",Cfg.Aim.Blacklist)
+PLWidget(AimP,25,"LISTA DE EXCLUSÃO",Cfg.Aim.Blacklist)
 Toggle(FovP,"Mostrar Círculo FOV",0,function() return Cfg.Aim.ShowFOV end,function(v) Cfg.Aim.ShowFOV=v; _fovLastVis=nil end)
 Toggle(FovP,"Usar FOV no Aimbot",1,function() return Cfg.Aim.UseFOV end,function(v) Cfg.Aim.UseFOV=v end)
 Toggle(FovP,"FOV Segue o Mouse",2,function() return Cfg.Aim.FOVFollow end,function(v) Cfg.Aim.FOVFollow=v; _fovLastCX=-1 end)
