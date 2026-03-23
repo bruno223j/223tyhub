@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════╗
--- ║            223HUB  v1.0  🔴 RELEASE                ║
+-- ║                   223HUB  v11.0  [OTIMIZADO]            ║
 -- ║      SCRIPT FEITO POR BRUNO223J E TY                    ║
 -- ║      DISCORD: .223j  |  frty2017                        ║
 -- ╚══════════════════════════════════════════════════════════╝
@@ -131,7 +131,7 @@ Instance.new("UICorner",KTop).CornerRadius=UDim.new(0,10)
 local KTopFix=Instance.new("Frame",KTop); KTopFix.Size=UDim2.new(1,0,0.5,0); KTopFix.Position=UDim2.new(0,0,0.5,0); KTopFix.BackgroundColor3=Color3.fromRGB(14,4,4); KTopFix.BorderSizePixel=0
 local KTopDiv=Instance.new("Frame",KC); KTopDiv.Size=UDim2.new(1,0,0,1); KTopDiv.Position=UDim2.new(0,0,0,50); KTopDiv.BackgroundColor3=Color3.fromRGB(165,20,20); KTopDiv.BorderSizePixel=0
 
-local KLogo=Instance.new("TextLabel",KTop); KLogo.Text="◈  223HUB  v1.0"
+local KLogo=Instance.new("TextLabel",KTop); KLogo.Text="◈  223HUB"
 KLogo.Size=UDim2.new(1,0,1,0); KLogo.BackgroundTransparency=1; KLogo.TextColor3=Color3.fromRGB(255,255,255)
 KLogo.Font=Enum.Font.GothamBold; KLogo.TextSize=20; KLogo.TextXAlignment=Enum.TextXAlignment.Center
 
@@ -145,7 +145,7 @@ end
 
 KL(KC,"🔐",38,Color3.fromRGB(255,255,255),60,Enum.Font.GothamBold)
 KL(KC,"VERIFICAÇÃO DE ACESSO",13,Color3.fromRGB(165,20,20),108,Enum.Font.GothamBold)
-KL(KC,"Insira sua key para acessar o 223HUB v1.0 RELEASE",11,Color3.fromRGB(75,75,90),128)
+KL(KC,"Insira sua key para acessar o 223HUB v11",11,Color3.fromRGB(75,75,90),128)
 
 local KBadgeRow=Instance.new("Frame",KC); KBadgeRow.Size=UDim2.new(1,-40,0,26); KBadgeRow.Position=UDim2.new(0,20,0,152); KBadgeRow.BackgroundTransparency=1
 local KBL=Instance.new("UIListLayout",KBadgeRow); KBL.FillDirection=Enum.FillDirection.Horizontal; KBL.HorizontalAlignment=Enum.HorizontalAlignment.Center; KBL.Padding=UDim.new(0,6)
@@ -188,7 +188,7 @@ KSavedInfo.BackgroundTransparency=1; KSavedInfo.Text=""; KSavedInfo.TextColor3=C
 KSavedInfo.Font=Enum.Font.Gotham; KSavedInfo.TextSize=10; KSavedInfo.TextXAlignment=Enum.TextXAlignment.Center
 
 local KFooter=Instance.new("TextLabel",KC); KFooter.Size=UDim2.new(1,-40,0,14); KFooter.Position=UDim2.new(0,20,0,350)
-KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP  ·  v1.0 RELEASE"
+KFooter.BackgroundTransparency=1; KFooter.Text="DISCORD: .223j | frty2017  ·  REVOLUCIONARI'US GROUP"
 KFooter.TextColor3=Color3.fromRGB(40,40,52); KFooter.Font=Enum.Font.Gotham; KFooter.TextSize=9; KFooter.TextXAlignment=Enum.TextXAlignment.Center
 
 KC.BackgroundTransparency=1; KC.Position=UDim2.new(0.5,-240,0.58,-200)
@@ -219,34 +219,108 @@ local function ShakeCard()
 end
 
 local function OnKeyApproved()
-    -- FASE 1: conteúdo do card some
+    -- Fase 1: conteúdo some
     for _,v in ipairs(KC:GetDescendants()) do
         if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
-            _KTween:Create(v,TweenInfo.new(0.12),{TextTransparency=1}):Play()
+            _KTween:Create(v,TweenInfo.new(0.15),{TextTransparency=1}):Play()
         end
     end
-    -- FASE 2: card COMPACTA para barrinha fina vermelha no centro
+    -- Fase 2: card COMPACTA para barrinha fina no centro
     task.delay(0.12,function()
-        _KTween:Create(KCStroke,TweenInfo.new(0.18),{Transparency=1}):Play()
-        _KTween:Create(KBG,TweenInfo.new(0.22),{BackgroundTransparency=1}):Play()
-        _KTween:Create(KC,TweenInfo.new(0.30,Enum.EasingStyle.Quart,Enum.EasingDirection.In),{
+        _KTween:Create(KCStroke,TweenInfo.new(0.2),{Transparency=1}):Play()
+        _KTween:Create(KBG,TweenInfo.new(0.25),{BackgroundTransparency=1}):Play()
+        _KTween:Create(KC,TweenInfo.new(0.32,Enum.EasingStyle.Quart,Enum.EasingDirection.In),{
             Size=UDim2.new(0,480,0,5),
             Position=UDim2.new(0.5,-240,0.5,-2),
             BackgroundColor3=Color3.fromRGB(165,20,20),
         }):Play()
     end)
-    -- FASE 3: barrinha EXPANDE para tela inteira escura
-    task.delay(0.50,function()
-        _KTween:Create(KC,TweenInfo.new(0.38,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
+    -- Fase 3: barrinha EXPANDE para tela inteira
+    task.delay(0.52,function()
+        _KTween:Create(KC,TweenInfo.new(0.42,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
             Size=UDim2.new(1,0,1,0),
             Position=UDim2.new(0,0,0,0),
             BackgroundColor3=Color3.fromRGB(7,7,10),
         }):Play()
     end)
-    -- FASE 4: destrói key GUI e inicia o hub normalmente
-    task.delay(0.95,function()
-        if KSG and KSG.Parent then KSG:Destroy() end
-        task.spawn(_223HUB_MAIN)
+
+    -- Fase 4: loading screen dentro da tela expandida
+    task.delay(1.0,function()
+        -- limpa conteúdo do card
+        for _,v in ipairs(KC:GetDescendants()) do pcall(function() v:Destroy() end) end
+
+        -- Logo centralizado
+        local logoL=Instance.new("TextLabel",KC)
+        logoL.Text="◈  223HUB"; logoL.Size=UDim2.new(1,0,0,40)
+        logoL.Position=UDim2.new(0,0,0,180); logoL.BackgroundTransparency=1
+        logoL.TextColor3=Color3.fromRGB(165,20,20); logoL.Font=Enum.Font.GothamBold
+        logoL.TextSize=28; logoL.TextXAlignment=Enum.TextXAlignment.Center
+        logoL.TextTransparency=1
+        _KTween:Create(logoL,TweenInfo.new(0.35),{TextTransparency=0}):Play()
+
+        local subL=Instance.new("TextLabel",KC)
+        subL.Text="Inicializando..."; subL.Size=UDim2.new(1,0,0,18)
+        subL.Position=UDim2.new(0,0,0,226); subL.BackgroundTransparency=1
+        subL.TextColor3=Color3.fromRGB(90,90,100); subL.Font=Enum.Font.Gotham
+        subL.TextSize=12; subL.TextXAlignment=Enum.TextXAlignment.Center
+        subL.TextTransparency=1
+        _KTween:Create(subL,TweenInfo.new(0.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out,0,false,0.15),{TextTransparency=0}):Play()
+
+        -- Barra de progresso
+        local barBg=Instance.new("Frame",KC)
+        barBg.Size=UDim2.new(0,360,0,5); barBg.Position=UDim2.new(0.5,-180,0,260)
+        barBg.BackgroundColor3=Color3.fromRGB(26,26,31); barBg.BorderSizePixel=0
+        Instance.new("UICorner",barBg).CornerRadius=UDim.new(1,0)
+        barBg.BackgroundTransparency=1
+        _KTween:Create(barBg,TweenInfo.new(0.3),{BackgroundTransparency=0}):Play()
+
+        local barFill=Instance.new("Frame",barBg)
+        barFill.Size=UDim2.new(0,0,1,0); barFill.BackgroundColor3=Color3.fromRGB(165,20,20)
+        barFill.BorderSizePixel=0; Instance.new("UICorner",barFill).CornerRadius=UDim.new(1,0)
+
+        local pctL=Instance.new("TextLabel",KC)
+        pctL.Text="0%"; pctL.Size=UDim2.new(1,0,0,14)
+        pctL.Position=UDim2.new(0,0,0,270); pctL.BackgroundTransparency=1
+        pctL.TextColor3=Color3.fromRGB(60,60,70); pctL.Font=Enum.Font.Code
+        pctL.TextSize=10; pctL.TextXAlignment=Enum.TextXAlignment.Center
+
+        local STEPS={
+            {0.15,"Verificando assinatura..."},
+            {0.30,"Carregando ESP & Xray..."},
+            {0.48,"Carregando Aimbot..."},
+            {0.62,"Carregando Misc..."},
+            {0.78,"Carregando GUI..."},
+            {0.92,"Aplicando saves..."},
+            {1.00,"Bem-vindo, ".._KLP.Name.."!"},
+        }
+        local TOTAL = 2.8
+        task.spawn(function()
+            local st=tick()
+            while true do
+                local pr=math.min((tick()-st)/TOTAL,1)
+                _KTween:Create(barFill,TweenInfo.new(0.08),{Size=UDim2.new(pr,0,1,0)}):Play()
+                pctL.Text=math.floor(pr*100).."%"
+                for i=#STEPS,1,-1 do
+                    if pr>=STEPS[i][1]-0.01 then subL.Text=STEPS[i][2]; break end
+                end
+                if pr>=1 then break end
+                task.wait(0.03)
+            end
+            -- Fase 3: fade final e inicia o hub
+            task.wait(0.3)
+            _KTween:Create(KC,TweenInfo.new(0.5,Enum.EasingStyle.Quart),{BackgroundTransparency=1}):Play()
+            for _,v in ipairs(KC:GetDescendants()) do
+                if v:IsA("TextLabel") or v:IsA("Frame") then
+                    _KTween:Create(v,TweenInfo.new(0.35),
+                        v:IsA("TextLabel") and {TextTransparency=1} or {BackgroundTransparency=1}
+                    ):Play()
+                end
+            end
+            task.delay(0.55,function()
+                if KSG and KSG.Parent then KSG:Destroy() end
+                task.spawn(_223HUB_MAIN)
+            end)
+        end)
     end)
 end
 
@@ -358,8 +432,7 @@ local Cfg = {
         AimStrength=70, Blacklist={},
     },
     Trigger = { Enabled=false, TeamCheck=false, Delay=80, AutoBot=false,
-                ClickControl=false, ClickCount=3,
-                OneShot=false, OneShotDelay=3 },
+                ClickControl=false, ClickCount=3 },
     Misc = {
         Fly=false, FlySpeed=50, FlyBoost=false, Noclip=false,
         Speed=false, WalkSpeed=25, AntiAFK=false,
@@ -754,119 +827,24 @@ local function UpdateFOVCircle()
 end
 
 -- ============================================================
--- NO RECOIL — cobertura máxima
--- Abordagem 1: zeragem de valores nomeados (sistemas baseados em instâncias)
--- Abordagem 2: intercepta câmera — reseta rotação X entre frames
---              (funciona em jogos que movem a cam diretamente via CFrame)
--- Abordagem 3: intercepta HRP BodyAngularVelocity/BodyGyro de recoil
--- Abordagem 4: zeragem de atributos de recoil no tool/char
+-- NO RECOIL
 -- ============================================================
-local _nrConn     = nil
-local _nrCamLastY = nil  -- yaw da câmera antes do tiro (para detectar kick vertical)
-local _nrCamLastX = nil  -- pitch salvo
-
--- Keywords de recoil ampliadas
-local NR_KEYS = {
-    "recoil","kickback","kick","spread","sway","shake","bump","punch",
-    "camshake","camkick","cameraoffset","viewkick","viewpunch",
-    "weaponkick","gunbob","muzzlekick","kickforce","recoilforce",
-}
-
-local function _IsRecoilValue(v)
-    local nm = v.Name:lower()
-    for _,k in ipairs(NR_KEYS) do
-        if nm:find(k,1,true) then return true end
-    end
-    return false
-end
-
-local function _ZeroRecoilValues(obj)
-    if not obj then return end
-    for _,v in ipairs(obj:GetDescendants()) do
-        if _IsRecoilValue(v) then
-            pcall(function()
-                if     v:IsA("Vector3Value") then v.Value = Vector3.zero
-                elseif v:IsA("CFrameValue")  then v.Value = CFrame.identity
-                elseif v:IsA("NumberValue")  then v.Value = 0
-                elseif v:IsA("IntValue")     then v.Value = 0
-                end
-            end)
-            -- atributos numéricos
-            pcall(function()
-                if typeof(v:GetAttribute(v.Name)) == "number" then
-                    v:SetAttribute(v.Name, 0)
-                end
-            end)
-        end
-        -- atributos de recoil diretamente na instância
-        pcall(function()
-            for attr, val in pairs(v:GetAttributes()) do
-                local an = attr:lower()
-                for _,k in ipairs(NR_KEYS) do
-                    if an:find(k,1,true) then
-                        if type(val)=="number" then v:SetAttribute(attr,0)
-                        elseif typeof(val)=="Vector3" then v:SetAttribute(attr,Vector3.zero)
-                        elseif typeof(val)=="CFrame"  then v:SetAttribute(attr,CFrame.identity)
-                        end
-                        break
-                    end
-                end
-            end
-        end)
-    end
-end
-
+local _nrConn=nil
 local function StartWeaponLoop()
     if _nrConn then return end
-
-    -- Salva pitch atual ao começar
-    local function saveCamPitch()
+    _nrConn=AC(RunService.RenderStepped:Connect(function()
         if not Cfg.Aim.NoRecoil then return end
-        local cf = Cam.CFrame
-        _nrCamLastY = select(2, cf:ToEulerAnglesYXZ())
-        _nrCamLastX = math.asin(cf.LookVector.Y)
-    end
-
-    _nrConn = AC(RunService.RenderStepped:Connect(function()
-        if not Cfg.Aim.NoRecoil then
-            _nrCamLastY = nil; _nrCamLastX = nil
-            return
-        end
-        local char = LP.Character; if not char then return end
-
-        -- ── Abordagem 1: valores de instância ──
+        local char=LP.Character; if not char then return end
         for _,tool in ipairs(char:GetChildren()) do
-            if tool:IsA("Tool") then _ZeroRecoilValues(tool) end
-        end
-        -- também no char (alguns jogos colocam o recoil direto no personagem)
-        _ZeroRecoilValues(char)
-
-        -- ── Abordagem 2: congelar o kick vertical da câmera ──
-        -- Ao atirar, a câmera sobe bruscamente; travamos o pitch
-        local cf = Cam.CFrame
-        local _,cy,_ = cf:ToEulerAnglesYXZ()
-        local pitch = math.asin(math.clamp(cf.LookVector.Y, -1, 1))
-
-        if _nrCamLastY ~= nil then
-            -- Se a câmera foi empurrada para cima mais de 0.003 rad em 1 frame = recoil
-            local dpitch = pitch - _nrCamLastX
-            if dpitch > 0.003 then
-                -- cancela o kick: restaura o pitch anterior
-                local newCF = CFrame.new(cf.Position)
-                             * CFrame.fromEulerAnglesYXZ(_nrCamLastX, cy, 0)
-                pcall(function() Cam.CFrame = newCF end)
-            end
-        end
-
-        _nrCamLastY = cy
-        _nrCamLastX = pitch
-
-        -- ── Abordagem 3: remove BodyAngularVelocity/BodyGyro de recoil no HRP ──
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            for _,v in ipairs(hrp:GetChildren()) do
-                if (v:IsA("BodyAngularVelocity") or v:IsA("BodyGyro")) and _IsRecoilValue(v) then
-                    pcall(function() v:Destroy() end)
+            if not tool:IsA("Tool") then continue end
+            for _,v in ipairs(tool:GetDescendants()) do
+                local nm=v.Name:lower()
+                if nm:find("recoil",1,true) or nm:find("kickback",1,true) or nm:find("kick",1,true) then
+                    pcall(function()
+                        if     v:IsA("Vector3Value") then v.Value=Vector3.zero
+                        elseif v:IsA("NumberValue")  then v.Value=0
+                        elseif v:IsA("CFrameValue")  then v.Value=CFrame.identity end
+                    end)
                 end
             end
         end
@@ -874,138 +852,90 @@ local function StartWeaponLoop()
 end
 
 -- ============================================================
--- INFINITE AMMO — cobertura máxima (v2)
+-- INFINITE AMMO — cobertura máxima de jogos
 -- Estratégia multicamada:
---   1. Instâncias nomeadas (IntValue/NumberValue) com keywords expandidas
---   2. Atributos do Roblox no tool/char (API moderna de atributos)
---   3. TODOS os IntValue/NumberValue com valor baixo (fallback cego)
---   4. Polling agressivo a cada frame para jogos server-authoritative
---   5. Hooks de .Changed + DescendantAdded para cobertura em tempo real
---   6. Scan de ObjectValue/StringValue que apontam para outros objetos
+--   1. .Changed em todos os valores de ammo conhecidos
+--   2. Polling leve (Heartbeat) para jogos que resetam via server a cada frame
+--   3. Keywords expandidas para cobrir mais nomes de variáveis
+--   4. setreadonly/rawset quando disponível (bypassa metatables)
+--   5. Escaneia módulos/scripts filhos da tool em busca de tabelas internas
 -- ============================================================
-local _iaConns    = {}
+local _iaConns   = {}   -- [tool] = {connections}
 local _iaCharConn = nil
 local _iaBpConn   = nil
-local _iaHBConn   = nil
-local _iaHBTick   = 0
+local _iaHBConn   = nil  -- heartbeat fallback
 
--- Keywords expandidas (ammo + recarga)
-local AMMO_KW = {
+-- Keywords expandidas: cobre a maioria dos sistemas de ammo do Roblox
+local AMMO_KEYWORDS = {
     "ammo","clip","bullets","mag","magazine","reserve","rounds","count",
     "ammocount","currentammo","maxammo","totalammo","bulletcount",
     "remainingammo","ammonumber","ammoremaining","ammorounds",
-    "cartridge","shell","charge","capacity","fuel","energy","mana",
-    "load","loaded","ingun","inmagazine","currentclip","clipsize",
-    "firepower","munition","projectile","shot","shots","fires",
-    "firecount","shootcount","remaining",
+    "cartridge","shell","charge","capacity",
 }
 
--- Verifica se o nome bate com algum keyword de ammo
-local function _isAmmoName(nm)
-    nm = nm:lower()
-    for _,kw in ipairs(AMMO_KW) do
+local function _IsAmmoValue(v)
+    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
+    local nm = v.Name:lower()
+    for _,kw in ipairs(AMMO_KEYWORDS) do
         if nm:find(kw,1,true) then return true end
     end
     return false
 end
 
--- Tenta setar usando todos os métodos disponíveis
-local function _ForceSet(v, val)
-    pcall(function() v.Value = val end)
-    pcall(function() rawset(v,"Value",val) end)
-    if setreadonly then pcall(function() setreadonly(v,false); v.Value=val end) end
-end
-
--- Força via atributos Roblox (API moderna — muitos jogos usam isso)
-local function _ForceAttribs(inst, val)
-    pcall(function()
-        for attr, cur in pairs(inst:GetAttributes()) do
-            if type(cur)=="number" and _isAmmoName(attr) then
-                inst:SetAttribute(attr, val)
-            end
-        end
-    end)
-end
-
--- Scan completo de uma instância e seus descendentes
--- Modo "cego": além das keywords, força qualquer IntValue/NumberValue
--- com valor entre 0 e 500 (heurística de ammo — evita setar HP/score)
-local function _ScanAndForce(inst, aggressive)
-    if not inst then return end
-    for _,v in ipairs(inst:GetDescendants()) do
+-- Tenta setar o valor usando vários métodos para bypass de proteções
+local function _SetAmmoVal(v, target)
+    -- método 1: direto
+    pcall(function() v.Value = target end)
+    -- método 2: rawset (bypassa __newindex em userdata limitado)
+    pcall(function() rawset(v, "Value", target) end)
+    -- método 3: setreadonly se disponível (ex: syn/krnl)
+    if setreadonly then
         pcall(function()
-            if v:IsA("IntValue") or v:IsA("NumberValue") then
-                local nm = v.Name:lower()
-                local isAmmo = _isAmmoName(nm)
-                -- modo agressivo: também força valores baixos com nomes suspeitos
-                local isSuspect = aggressive and v.Value >= 0 and v.Value <= 500
-                    and not nm:find("health",1,true) and not nm:find("hp",1,true)
-                    and not nm:find("score",1,true) and not nm:find("cash",1,true)
-                    and not nm:find("coin",1,true) and not nm:find("point",1,true)
-                    and not nm:find("level",1,true) and not nm:find("exp",1,true)
-                    and not nm:find("damage",1,true) and not nm:find("speed",1,true)
-                if isAmmo or isSuspect then
-                    _ForceSet(v, 9999)
-                end
-            end
+            setreadonly(v, false)
+            v.Value = target
         end)
-        -- atributos em qualquer descendente
-        _ForceAttribs(v, 9999)
     end
-    -- atributos na raiz também
-    _ForceAttribs(inst, 9999)
 end
 
-local function _IsAmmoValue(v)
-    if not (v:IsA("IntValue") or v:IsA("NumberValue")) then return false end
-    return _isAmmoName(v.Name)
+-- Coleta TODOS os IntValue/NumberValue com keywords de ammo de um tool,
+-- incluindo dentro de ModuleScript tables via getupvalues quando disponível
+local function _FindAmmoValues(tool)
+    local found = {}
+    -- scan padrão de instâncias descendentes
+    for _,v in ipairs(tool:GetDescendants()) do
+        if _IsAmmoValue(v) then
+            found[#found+1] = v
+        end
+    end
+    return found
 end
 
 local function _HookTool(tool)
     if _iaConns[tool] then return end
     local conns = {}
 
-    -- Força imediato no scan completo (modo agressivo)
-    _ScanAndForce(tool, true)
-
-    -- Hook .Changed em todos os valores de ammo
     local function hookVal(v)
-        _ForceSet(v, 9999)
+        _SetAmmoVal(v, 9999)
         local c = v.Changed:Connect(function(val)
             if Cfg.Aim.InfAmmo and val < 9999 then
-                _ForceSet(v, 9999)
+                _SetAmmoVal(v, 9999)
             end
         end)
         conns[#conns+1] = c
     end
 
-    for _,v in ipairs(tool:GetDescendants()) do
-        if _IsAmmoValue(v) then hookVal(v) end
+    for _,v in ipairs(_FindAmmoValues(tool)) do
+        hookVal(v)
     end
 
-    -- Observa novos descendentes (jogos que criam valores ao equipar)
+    -- observa descendentes adicionados depois (jogos que criam valores dinamicamente)
     local dc = tool.DescendantAdded:Connect(function(v)
         if not Cfg.Aim.InfAmmo then return end
-        task.defer(function()
-            if _IsAmmoValue(v) then hookVal(v) end
-            -- força atributos no novo descendente
-            _ForceAttribs(v, 9999)
-        end)
-    end)
-    conns[#conns+1] = dc
-
-    -- AttributeChanged no próprio tool (jogos que usam atributos)
-    local ac2 = tool.AttributeChanged:Connect(function(attr)
-        if not Cfg.Aim.InfAmmo then return end
-        if _isAmmoName(attr) then
-            pcall(function()
-                if type(tool:GetAttribute(attr))=="number" then
-                    tool:SetAttribute(attr, 9999)
-                end
-            end)
+        if _IsAmmoValue(v) then
+            task.defer(function() hookVal(v) end)
         end
     end)
-    conns[#conns+1] = ac2
+    conns[#conns+1] = dc
 
     _iaConns[tool] = conns
 end
@@ -1021,7 +951,6 @@ local function _HookChar(char)
     for tool in pairs(_iaConns) do _UnhookTool(tool) end
     if not char then return end
     local bp = LP:FindFirstChild("Backpack")
-
     local function hookContainer(cont)
         if not cont then return end
         for _,v in ipairs(cont:GetChildren()) do
@@ -1030,7 +959,6 @@ local function _HookChar(char)
     end
     hookContainer(char)
     hookContainer(bp)
-
     if _iaCharConn then pcall(function() _iaCharConn:Disconnect() end) end
     _iaCharConn = char.ChildAdded:Connect(function(v)
         if v:IsA("Tool") and Cfg.Aim.InfAmmo then _HookTool(v) end
@@ -1043,6 +971,9 @@ local function _HookChar(char)
     end
 end
 
+-- Fallback de polling: cobre jogos que resetam ammo server-side a cada tick
+-- Roda a cada ~10 frames (~0.16s) para não sobrecarregar
+local _iaHBTick = 0
 local function StartInfAmmo()
     AC(LP.CharacterAdded:Connect(function(c)
         task.wait(0.5)
@@ -1050,30 +981,22 @@ local function StartInfAmmo()
     end))
     if LP.Character and Cfg.Aim.InfAmmo then _HookChar(LP.Character) end
 
-    -- Polling a cada 3 frames (~0.05s): mais agressivo para cobrir jogos
-    -- que resetam ammo server-side continuamente
+    -- Polling leve como fallback (1x a cada 10 frames ~0.16s)
     _iaHBConn = AC(RunService.Heartbeat:Connect(function()
         if not Cfg.Aim.InfAmmo then return end
         _iaHBTick = _iaHBTick + 1
-        if _iaHBTick % 3 ~= 0 then return end
+        if _iaHBTick % 10 ~= 0 then return end
         local char = LP.Character
         local bp   = LP:FindFirstChild("Backpack")
         local conts = {}
         if char then conts[#conts+1] = char end
-        if bp   then conts[#conts+1] = bp end
+        if bp   then conts[#conts+1] = bp   end
         for _,cont in ipairs(conts) do
             for _,tool in ipairs(cont:GetChildren()) do
                 if not tool:IsA("Tool") then continue end
-                -- força todos os valores conhecidos + atributos
-                for _,v in ipairs(tool:GetDescendants()) do
-                    pcall(function()
-                        if (v:IsA("IntValue") or v:IsA("NumberValue")) and _isAmmoName(v.Name) and v.Value < 9999 then
-                            _ForceSet(v, 9999)
-                        end
-                    end)
-                    _ForceAttribs(v, 9999)
+                for _,v in ipairs(_FindAmmoValues(tool)) do
+                    if v.Value < 9999 then _SetAmmoVal(v, 9999) end
                 end
-                _ForceAttribs(tool, 9999)
             end
         end
     end))
@@ -1081,12 +1004,10 @@ end
 
 -- ============================================================
 -- TRIGGERBOT
--- ClickControl / One-Shot: modos de disparo do TriggerBot
+-- ClickControl: quando ativado, dispara N clicks ao detectar alvo
 -- ============================================================
-local _tbLast      = 0
-local _tbFiring    = false  -- evita disparos sobrepostos
-local _osShotReady = true   -- One-Shot: libera o próximo disparo
-local _osLastTgt   = nil    -- One-Shot: player do último disparo
+local _tbLast    = 0
+local _tbFiring  = false  -- evita disparos sobrepostos
 
 local function _DoClicks(n)
     if _tbFiring then return end
@@ -1111,26 +1032,6 @@ AC(RunService.Heartbeat:Connect(function()
     local p=Players:GetPlayerFromCharacter(model); if not p then return end
     if not IsValidTarget(p) then return end
     if Cfg.Trigger.TeamCheck and SameTeam(p) then return end
-
-    -- One-Shot: 1 disparo por lock, depois aguarda delay configurável
-    if Cfg.Trigger.OneShot then
-        -- Troca de alvo → reseta imediatamente para atirar
-        if p ~= _osLastTgt then
-            _osShotReady = true
-            _osLastTgt   = p
-        end
-        if not _osShotReady then return end
-        _osShotReady = false
-        _tbLast = tick()
-        local clicks = (Cfg.Trigger.ClickControl and Cfg.Trigger.ClickCount) or 1
-        _DoClicks(clicks)
-        -- Após o delay, libera próximo tiro no mesmo alvo
-        task.delay(Cfg.Trigger.OneShotDelay, function()
-            if _osLastTgt == p then _osShotReady = true end
-        end)
-        return
-    end
-
     _tbLast=tick()
     local clicks = (Cfg.Trigger.ClickControl and Cfg.Trigger.ClickCount) or 1
     _DoClicks(clicks)
@@ -1967,11 +1868,11 @@ local LC=Instance.new("Frame",LF); LC.Size=UDim2.new(0,420,0,170); LC.Position=U
 local function LBL(p,t,sz,col,y,fn) local l=Instance.new("TextLabel",p); l.Text=t; l.Size=UDim2.new(1,0,0,sz); l.Position=UDim2.new(0,0,0,y); l.BackgroundTransparency=1; l.TextColor3=col; l.Font=fn or FB; l.TextSize=sz; l.TextXAlignment=Enum.TextXAlignment.Center end
 LBL(LC,"◈",50,C.red,0); LBL(LC,"223HUB",42,C.wht,52); LBL(LC,"HUB BY REVOLUCIONARI'US GROUP",14,C.dim,98,FM)
 LBL(LC,"SCRIPT FEITO POR BRUNO223J AND TY  ·  DISCORD: .223j | frty2017",11,C.gold,114,FM)
-LBL(LC,"v1.0  ·  🔴 RELEASE",10,C.red,130,FC)
+LBL(LC,"v11.0  ·  Public Beta",10,C.red,130,FC)
 local BC=Instance.new("Frame",LF); BC.Size=UDim2.new(0,360,0,5); BC.Position=UDim2.new(0.5,-180,0.5,62); BC.BackgroundColor3=C.bg4; BC.BorderSizePixel=0; Instance.new("UICorner",BC).CornerRadius=UDim.new(1,0)
 local BF=Instance.new("Frame",BC); BF.Size=UDim2.new(0,0,1,0); BF.BackgroundColor3=C.red; BF.BorderSizePixel=0; Instance.new("UICorner",BF).CornerRadius=UDim.new(1,0)
 local LST=Instance.new("TextLabel",LF); LST.Size=UDim2.new(0,360,0,16); LST.Position=UDim2.new(0.5,-180,0.5,76); LST.BackgroundTransparency=1; LST.TextColor3=C.dim; LST.Font=FC; LST.TextSize=10; LST.TextXAlignment=Enum.TextXAlignment.Center; LST.Text="Inicializando..."
-local LSTEPS={{0.12,"Verificando..."},{0.3,"ESP & Xray..."},{0.45,"Aimbot..."},{0.6,"Modos..."},{0.75,"Keybinds..."},{0.9,"Saves..."},{1.0,"🎉 Bem-vindo, "..LP.Name.."!"}}
+local LSTEPS={{0.12,"Verificando..."},{0.3,"ESP & Xray..."},{0.45,"Aimbot..."},{0.6,"Modos..."},{0.75,"Keybinds..."},{0.9,"Saves..."},{1.0,"Bem-vindo, "..LP.Name.."!"}}
 task.spawn(function()
     local st=tick()
     while true do
@@ -2000,7 +1901,7 @@ local _=Instance.new("Frame",TB); _.Size=UDim2.new(1,0,0,6); _.BackgroundColor3=
 local _=Instance.new("Frame",Win); _.Size=UDim2.new(1,0,0,1); _.Position=UDim2.new(0,0,0,38); _.BackgroundColor3=C.red; _.BorderSizePixel=0
 local LG=Instance.new("Frame",TB); LG.Size=UDim2.new(0,218,1,0); LG.BackgroundTransparency=1
 local _=Instance.new("TextLabel",LG); _.Text="◈"; _.Size=UDim2.new(0,30,1,0); _.Position=UDim2.new(0,8,0,0); _.BackgroundTransparency=1; _.TextColor3=C.red; _.Font=FB; _.TextSize=20
-local _=Instance.new("TextLabel",LG); _.Text="223HUB  v1.0"; _.Size=UDim2.new(1,-40,0,22); _.Position=UDim2.new(0,36,0,5); _.BackgroundTransparency=1; _.TextColor3=C.wht; _.Font=FB; _.TextSize=15; _.TextXAlignment=Enum.TextXAlignment.Left
+local _=Instance.new("TextLabel",LG); _.Text="223HUB"; _.Size=UDim2.new(1,-40,0,22); _.Position=UDim2.new(0,36,0,5); _.BackgroundTransparency=1; _.TextColor3=C.wht; _.Font=FB; _.TextSize=15; _.TextXAlignment=Enum.TextXAlignment.Left
 local _=Instance.new("TextLabel",LG); _.Text="BRUNO223J & TY · .223j | frty2017"; _.Size=UDim2.new(1,-40,0,12); _.Position=UDim2.new(0,36,0,22); _.BackgroundTransparency=1; _.TextColor3=C.gold; _.Font=FM; _.TextSize=9; _.TextXAlignment=Enum.TextXAlignment.Left
 local _=Instance.new("Frame",TB); _.Size=UDim2.new(0,1,0.55,0); _.Position=UDim2.new(0,216,0.22,0); _.BackgroundColor3=C.sep; _.BorderSizePixel=0
 local MinB=Instance.new("TextButton",TB); MinB.Text="—"; MinB.Size=UDim2.new(0,28,0,22); MinB.Position=UDim2.new(1,-33,0.5,-11); MinB.BackgroundColor3=C.bg4; MinB.TextColor3=C.dim; MinB.Font=FB; MinB.TextSize=13; MinB.BorderSizePixel=0; Instance.new("UICorner",MinB).CornerRadius=UDim.new(0,4)
@@ -2228,16 +2129,9 @@ Toggle(TrgP,"Click Control (múltiplos clicks)",7,function() return Cfg.Trigger.
 Slider(TrgP,"Nº de Clicks por alvo",1,10,3,9,function(v) Cfg.Trigger.ClickCount=v end)
 do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=11
     local l=Instance.new("TextLabel",f); l.Text="Dispara N clicks ao detectar um alvo.\nSem Click Control = 1 click padrão."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
-Sep(TrgP,12); SL(TrgP,"ONE-SHOT",13,C.orange)
-Toggle(TrgP,"One-Shot (1 tiro por lock)",14,function() return Cfg.Trigger.OneShot end,function(v)
-    Cfg.Trigger.OneShot=v; _osShotReady=true; _osLastTgt=nil
-end,nil,C.orange)
-Slider(TrgP,"Delay entre tiros (s)",1,10,3,16,function(v) Cfg.Trigger.OneShotDelay=v end)
-do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,30); f.BackgroundTransparency=1; f.LayoutOrder=18
-    local l=Instance.new("TextLabel",f); l.Text="Ao travar num alvo: atira 1x e aguarda o delay.\nAo trocar de alvo, atira imediatamente."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
-Sep(TrgP,20); SL(TrgP,"AUTO AIMBOT",21)
-Toggle(TrgP,"AutoBot (Aimbot automático)",22,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
-do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=24
+Sep(TrgP,13); SL(TrgP,"AUTO AIMBOT",14)
+Toggle(TrgP,"AutoBot (Aimbot automático)",15,function() return Cfg.Trigger.AutoBot end,function(v) Cfg.Trigger.AutoBot=v end)
+do local f=Instance.new("Frame",TrgP); f.Size=UDim2.new(1,0,0,24); f.BackgroundTransparency=1; f.LayoutOrder=17
     local l=Instance.new("TextLabel",f); l.Text="Mira automaticamente sem segurar tecla.\nUsa Wall/Team Check e FOV do Aimbot."; l.Size=UDim2.new(1,0,1,0); l.BackgroundTransparency=1; l.TextColor3=C.dim; l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top end
 
 local EspP=Panel(PVis,"ESP",0,0,435,468); local TrackP=Panel(PVis,"Track Player",443,0,435,468)
@@ -2450,7 +2344,7 @@ Btn(CfgP,"↺ Atualizar Saves",13,RefSaves); RefSaves()
 Sep(CfgP,15); SL(CfgP,"CRÉDITOS",16)
 IL(CfgP,"SCRIPT POR BRUNO223J AND TY",17,C.gold)
 IL(CfgP,"DISCORD: .223j  |  frty2017",18,C.gold)
-IL(CfgP,"REVOLUCIONARI'US GROUP  ·  v1.0 RELEASE 🔴",19,C.wht)
+IL(CfgP,"HUB REVOLUCIONARI'US GROUP  v11.0",19,C.wht)
 IL(CfgP,"Toggle: [;] · Arrastar pela topbar",20,C.dim)
 Sep(CfgP,21); SL(CfgP,"REMOVER SCRIPT",22,C.red)
 Btn(CfgP,"🗑 Desligar & Remover Tudo",23,function()
@@ -2468,7 +2362,7 @@ Btn(CfgP,"🗑 Desligar & Remover Tudo",23,function()
         if h then h.WalkSpeed=16; h.JumpPower=50; h.PlatformStand=false end
     end
     task.wait(0.1); if SG and SG.Parent then SG:Destroy() end
-    print("[223HUB v1.0 RELEASE] Removido com sucesso.")
+    print("[223HUB v11.0] Removido com sucesso.")
 end,Color3.fromRGB(80,8,8),C.redH)
 
 SL(LogP,"CHAT LOG",0,C.gold)
@@ -2488,6 +2382,6 @@ end
 Btn(LogP,"↺ Atualizar",2,RefLog,C.bg4,C.gold); RefLog()
 task.spawn(function() while true do task.wait(5); if _curTab=="Settings" then pcall(RefLog) end end end)
 
-print("[223HUB v1.0 RELEASE] ✓ LOADED | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
+print("[223HUB v11.0] ✓ LOADED [OTIMIZADO] | BRUNO223J & TY | .223j | frty2017 | Toggle=[;]")
 
 end -- fim de _223HUB_MAIN()
