@@ -1483,15 +1483,82 @@ local function GetMapTools()
     end
     return out
 end
--- DUPLICAR TOOL
+-- DUPLICAR TOOL 
 local function DupeTool()
-    local nm=Cfg.Misc.DupeToolName:lower():gsub("%s+",""); if nm=="" then return end
-    local bp=LP:FindFirstChild("Backpack"); local char=LP.Character; local tool
-    if bp   then for _,v in ipairs(bp:GetChildren())   do if v:IsA("Tool") and v.Name:lower():find(nm,1,true) then tool=v;break end end end
-    if not tool and char then for _,v in ipairs(char:GetChildren()) do if v:IsA("Tool") and v.Name:lower():find(nm,1,true) then tool=v;break end end end
-    if tool and bp then tool:Clone().Parent=bp end
-end
+    local nm = Cfg.Misc.DupeToolName:lower():gsub("%s+", "")
+    if nm == "" then return end
 
+    local bp   = LP:FindFirstChild("Backpack")
+    local char = LP.Character
+    local tool
+
+    if bp   then for _, v in ipairs(bp:GetChildren())   do if v:IsA("Tool") and v.Name:lower():find(nm, 1, true) then tool = v; break end end end
+    if not tool and char then for _, v in ipairs(char:GetChildren()) do if v:IsA("Tool") and v.Name:lower():find(nm, 1, true) then tool = v; break end end end
+    if not tool or not bp then return end
+
+    -- Método 1: Drop + Pickup exploit
+    -- Solta a tool no mundo e tenta re-pickupá-la sem remover a original
+    local char = LP.Character
+    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        -- Muitos jogos usam um DropTool remote que depois permite pickup duplicado
+        local dropRemotes = {"DropTool", "Drop", "ThrowTool", "DiscardTool", "UnequipDrop"}
+        for _, v in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+            if (v:IsA("RemoteEvent") or v:IsA("RemoteFunction")) then
+                local vName = v.Name:lower()
+                for _, rn in ipairs(dropRemotes) do
+                    if vName:find(rn:lower(), 1, true) then
+                        -- Dispara drop e imediatamente tenta pegar de volta
+                        pcall(function()
+                            if v:IsA("RemoteEvent") then v:FireServer(tool)
+                            else v:InvokeServer(tool) end
+                        end)
+                        task.wait(0.05)
+                        -- Re-pickupa via proximity ou touch
+                        local dropped = workspace:FindFirstChild(tool.Name)
+                        if dropped then
+                            -- Teleporta pra cima do item dropado para triggar pickup
+                            hrp.CFrame = dropped.Handle and 
+                                CFrame.new(dropped.Handle.Position + Vector3.new(0,2,0)) or hrp.CFrame
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Método 2: Exploit de replicação — seta NetworkOwnership e move instância
+    -- Tenta mover a tool pra Workspace e de volta, forçando re-add server-side
+    pcall(function()
+        local clone = tool:Clone()
+        clone.Parent = workspace
+        task.wait(0.05)
+        clone.Parent = bp
+    end)
+
+    -- Método 3: Scan de Purchase/Give remotes sem permissão
+    -- Alguns jogos têm remotes de "comprar com currency 0" ou "claim free item"
+    local giveRemotes = {
+        "GiveTool", "AddTool", "GiveItem", "ClaimTool",
+        "PickupTool", "CollectTool", "ObtainTool", "RequestTool"
+    }
+    for _, v in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if (v:IsA("RemoteEvent") or v:IsA("RemoteFunction")) then
+            local vName = v.Name:lower()
+            for _, rn in ipairs(giveRemotes) do
+                if vName:find(rn:lower(), 1, true) then
+                    pcall(function()
+                        if v:IsA("RemoteEvent") then v:FireServer(tool)
+                        else v:InvokeServer(tool) end
+                    end)
+                end
+            end
+        end
+    end
+
+    -- Fallback visual
+    tool:Clone().Parent = bp
+end
 local function Rejoin() pcall(function() TeleportService:Teleport(game.PlaceId,LP) end) end
 local function ServerHop()
     local ok,srv=pcall(function()
