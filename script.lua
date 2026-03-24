@@ -1370,11 +1370,12 @@ end
 
 -- ============================================================
 -- GRAB TOOL — robusto para jogos com sistemas customizados
--- Tenta 4 métodos em sequência até um funcionar:
+-- Tenta 5 métodos em sequência até um funcionar:
 --   1. .Parent direto (método padrão)
 --   2. Humanoid:EquipTool() — API oficial do Roblox
 --   3. FireServer em RemoteEvent de pickup se encontrado no jogo
---   4. Teleporta o char até a tool e usa Humanoid:EquipTool
+--   4. Clone direto pro backpack
+--   5. Teleporta o char até a tool e usa Humanoid:EquipTool
 -- ============================================================
 local function _TryGrab(tool)
     if not tool or not tool.Parent then return false end
@@ -1382,36 +1383,49 @@ local function _TryGrab(tool)
     local char = LP.Character
     local hum  = char and char:FindFirstChildOfClass("Humanoid")
 
-    -- Método 1: parent direto para backpack
     local ok1 = pcall(function() tool.Parent = bp end)
     if ok1 and (tool.Parent == bp or (char and tool.Parent == char)) then return true end
 
-    -- Método 2: EquipTool via Humanoid
     if hum then
         local ok2 = pcall(function() hum:EquipTool(tool) end)
         if ok2 and tool.Parent == char then return true end
     end
 
-    -- Método 3: procura RemoteEvent de "pickup" / "grab" no jogo
-    local function findPickupRemote()
+    local function findRemote(keywords)
         for _,v in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
             if v:IsA("RemoteEvent") then
                 local nm = v.Name:lower()
-                if nm:find("pickup",1,true) or nm:find("grab",1,true) or nm:find("equip",1,true) or nm:find("collect",1,true) then
-                    return v
+                for _,kw in ipairs(keywords) do
+                    if nm:find(kw,1,true) then return v end
                 end
             end
         end
         return nil
     end
-    local remote = findPickupRemote()
-    if remote then
-        pcall(function() remote:FireServer(tool) end)
-        task.wait(0.1)
+    local pickupRemote = findRemote({"pickup","grab","equip","collect","give","spawn","weapon","tool","get"})
+    if pickupRemote then
+        pcall(function() pickupRemote:FireServer(tool) end)
+        task.wait(0.15)
+        if tool.Parent == bp or (char and tool.Parent == char) then return true end
+        pcall(function() pickupRemote:FireServer(tool.Name) end)
+        task.wait(0.15)
+        if tool.Parent == bp or (char and tool.Parent == char) then return true end
+        pcall(function() pickupRemote:FireServer() end)
+        task.wait(0.15)
         if tool.Parent == bp or (char and tool.Parent == char) then return true end
     end
 
-    -- Método 4: teleporta até a tool e tenta novamente
+    pcall(function()
+        local clone = tool:Clone()
+        clone.Parent = bp
+    end)
+    task.wait(0.1)
+    if bp then
+        for _,v in ipairs(bp:GetChildren()) do
+            if v.Name == tool.Name then return true end
+        end
+    end
+
     if hum and char then
         local hrp  = char:FindFirstChild("HumanoidRootPart")
         local part = tool:FindFirstChildOfClass("BasePart")
@@ -1450,17 +1464,14 @@ end
 
 local function GetMapTools()
     local out={}
-    for _,v in ipairs(Workspace:GetDescendants()) do
-        -- filtra tools que já estão sendo usadas por outros players
-        if v:IsA("Tool") and not v:IsDescendantOf(Players) then
-            local part = v:FindFirstChildOfClass("BasePart")
-            -- só lista tools que têm uma parte física (estão no mundo, não em scripts)
-            if part then
+    local containers = {Workspace, game:GetService("ReplicatedStorage")}
+    for _,container in ipairs(containers) do
+        for _,v in ipairs(container:GetDescendants()) do
+            if v:IsA("Tool") and not v:IsDescendantOf(Players) then
                 out[#out+1]={name=v.Name, tool=v, dist=0}
             end
         end
     end
-    -- ordena por distância do player
     local char = LP.Character
     local hrp  = char and char:FindFirstChild("HumanoidRootPart")
     if hrp then
@@ -1472,6 +1483,7 @@ local function GetMapTools()
     end
     return out
 end
+-- DUPLICAR TOOL
 local function DupeTool()
     local nm=Cfg.Misc.DupeToolName:lower():gsub("%s+",""); if nm=="" then return end
     local bp=LP:FindFirstChild("Backpack"); local char=LP.Character; local tool
@@ -1506,7 +1518,6 @@ local function StartChatLog()
     for _,p in ipairs(Players:GetPlayers()) do hookP(p) end
     Players.PlayerAdded:Connect(hookP)
 end
-
 
 
 -- ============================================================
