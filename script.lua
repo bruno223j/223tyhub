@@ -1849,6 +1849,24 @@ local function TR(k) if _CBs[k] then _CBs[k]() end end
 
 AC(UIS.InputBegan:Connect(function(inp,gp)
     if gp then return end
+
+    -- Botões do mouse como keybinds
+    local mb = inp.UserInputType
+    if mb==Enum.UserInputType.MouseButton1
+    or mb==Enum.UserInputType.MouseButton2
+    or mb==Enum.UserInputType.MouseButton3 then
+        if mb==Cfg.Settings.ToggleMB        then _guiVisible=not _guiVisible; if _G._223HUB_Win then _G._223HUB_Win.Visible=_guiVisible end
+        elseif mb==Cfg.Settings.ESPMb       then Cfg.ESP.Enabled=not Cfg.ESP.Enabled; TR("ESP")
+        elseif mb==Cfg.Settings.AimbotMb    then Cfg.Aim.Aimbot=not Cfg.Aim.Aimbot; TR("Aim")
+        elseif mb==Cfg.Settings.FlyMb       then Cfg.Misc.Fly=not Cfg.Misc.Fly; if Cfg.Misc.Fly then EnableFly() else DisableFly() end; TR("Fly")
+        elseif mb==Cfg.Settings.NoclipMb    then Cfg.Misc.Noclip=not Cfg.Misc.Noclip; if Cfg.Misc.Noclip then EnableNoclip() else DisableNoclip() end; TR("NC")
+        elseif mb==Cfg.Settings.SpeedMb     then Cfg.Misc.Speed=not Cfg.Misc.Speed; ApplySpeed(); TR("Speed")
+        elseif mb==Cfg.Settings.XrayMb      then Cfg.Xray.Enabled=not Cfg.Xray.Enabled; TR("Xray")
+        elseif mb==Cfg.Settings.FreeCamMb   then Cfg.Misc.FreeCam=not Cfg.Misc.FreeCam; if Cfg.Misc.FreeCam then EnableFreeCam() else DisableFreeCam() end; TR("FC")
+        elseif mb==Cfg.Settings.BypassMb and Cfg.Settings.BypassEnabled then _bypassActive=not _bypassActive; ApplyBypass(_bypassActive) end
+        return
+    end
+
     if inp.UserInputType~=Enum.UserInputType.Keyboard then return end
     local kc=inp.KeyCode
     if     kc==Cfg.Settings.ToggleKey  then _guiVisible=not _guiVisible; if _G._223HUB_Win then _G._223HUB_Win.Visible=_guiVisible end
@@ -2017,10 +2035,22 @@ local function KB(parent,label,order,getN,onSet)
         local cn; cn=UIS.InputBegan:Connect(function(inp,gp)
             if gp then return end
             if inp.UserInputType==Enum.UserInputType.Keyboard then
-                cn:Disconnect(); listening=false
-                bdg.Text="["..inp.KeyCode.Name.."]"; bdg.TextColor3=C.text
-                onSet(inp.KeyCode,inp.KeyCode.Name)
-            end
+    cn:Disconnect(); listening=false
+    bdg.Text="["..inp.KeyCode.Name.."]"; bdg.TextColor3=C.text
+    onSet(inp.KeyCode, inp.KeyCode.Name, nil)
+elseif inp.UserInputType==Enum.UserInputType.MouseButton1
+    or inp.UserInputType==Enum.UserInputType.MouseButton2
+    or inp.UserInputType==Enum.UserInputType.MouseButton3 then
+    cn:Disconnect(); listening=false
+    local names = {
+        [Enum.UserInputType.MouseButton1]="MB1",
+        [Enum.UserInputType.MouseButton2]="MB2",
+        [Enum.UserInputType.MouseButton3]="MB3",
+    }
+    local nm = names[inp.UserInputType] or "MB?"
+    bdg.Text="["..nm.."]"; bdg.TextColor3=C.text
+    onSet(nil, nm, inp.UserInputType)
+end
         end)
     end)
 end
