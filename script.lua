@@ -2347,35 +2347,32 @@ do
         order=order+2
     end
 end
-
 local KbP=Panel(PSettings,"Teclas de Atalho",0,0,435,468); local CfgP=Panel(PSettings,"Configurações & Saves",443,0,290,468); local LogP=Panel(PSettings,"Chat Log",737,0,175,468)
-KB(KbP,"Toggle GUI",0,function() return Cfg.Settings.ToggleKeyName end,function(k,n) Cfg.Settings.ToggleKey=k; Cfg.Settings.ToggleKeyName=n end)
-KB(KbP,"ESP On/Off",2,function() return Cfg.Settings.ESPKeyName end,function(k,n) Cfg.Settings.ESPKey=k; Cfg.Settings.ESPKeyName=n end)
-KB(KbP,"Aimbot On/Off",4,function() return Cfg.Settings.AimbotKeyName end,function(k,n) Cfg.Settings.AimbotKey=k; Cfg.Settings.AimbotKeyName=n end)
-KB(KbP,"Fly On/Off",6,function() return Cfg.Settings.FlyKeyName end,function(k,n) Cfg.Settings.FlyKey=k; Cfg.Settings.FlyKeyName=n end)
-KB(KbP,"Noclip On/Off",8,function() return Cfg.Settings.NoclipKeyName end,function(k,n) Cfg.Settings.NoclipKey=k; Cfg.Settings.NoclipKeyName=n end)
-KB(KbP,"Speed On/Off",10,function() return Cfg.Settings.SpeedKeyName end,function(k,n) Cfg.Settings.SpeedKey=k; Cfg.Settings.SpeedKeyName=n end)
-KB(KbP,"Xray On/Off",12,function() return Cfg.Settings.XrayKeyName end,function(k,n) Cfg.Settings.XrayKey=k; Cfg.Settings.XrayKeyName=n end)
-KB(KbP,"FreeCam On/Off",14,function() return Cfg.Settings.FreeCamKeyName end,function(k,n) Cfg.Settings.FreeCamKey=k; Cfg.Settings.FreeCamKeyName=n end)
-KB(KbP,"Aim Key (segurar)",16,function() return Cfg.Aim.AimKeyName end,function(k,n) Cfg.Aim.AimKey=k; Cfg.Aim.AimKeyName=n end)
+KB(KbP,"Toggle GUI",0,function() return Cfg.Settings.ToggleKeyName end,function(k,n,mb) Cfg.Settings.ToggleKey=k or Enum.KeyCode.Unknown; Cfg.Settings.ToggleKeyName=n; Cfg.Settings.ToggleMB=mb end)
+KB(KbP,"ESP On/Off",2,function() return Cfg.Settings.ESPKeyName end,function(k,n,mb) Cfg.Settings.ESPKey=k or Enum.KeyCode.Unknown; Cfg.Settings.ESPKeyName=n; Cfg.Settings.ESPMb=mb end)
+KB(KbP,"Aimbot On/Off",4,function() return Cfg.Settings.AimbotKeyName end,function(k,n,mb) Cfg.Settings.AimbotKey=k or Enum.KeyCode.Unknown; Cfg.Settings.AimbotKeyName=n; Cfg.Settings.AimbotMb=mb end)
+KB(KbP,"Fly On/Off",6,function() return Cfg.Settings.FlyKeyName end,function(k,n,mb) Cfg.Settings.FlyKey=k or Enum.KeyCode.Unknown; Cfg.Settings.FlyKeyName=n; Cfg.Settings.FlyMb=mb end)
+KB(KbP,"Noclip On/Off",8,function() return Cfg.Settings.NoclipKeyName end,function(k,n,mb) Cfg.Settings.NoclipKey=k or Enum.KeyCode.Unknown; Cfg.Settings.NoclipKeyName=n; Cfg.Settings.NoclipMb=mb end)
+KB(KbP,"Speed On/Off",10,function() return Cfg.Settings.SpeedKeyName end,function(k,n,mb) Cfg.Settings.SpeedKey=k or Enum.KeyCode.Unknown; Cfg.Settings.SpeedKeyName=n; Cfg.Settings.SpeedMb=mb end)
+KB(KbP,"Xray On/Off",12,function() return Cfg.Settings.XrayKeyName end,function(k,n,mb) Cfg.Settings.XrayKey=k or Enum.KeyCode.Unknown; Cfg.Settings.XrayKeyName=n; Cfg.Settings.XrayMb=mb end)
+KB(KbP,"FreeCam On/Off",14,function() return Cfg.Settings.FreeCamKeyName end,function(k,n,mb) Cfg.Settings.FreeCamKey=k or Enum.KeyCode.Unknown; Cfg.Settings.FreeCamKeyName=n; Cfg.Settings.FreeCamMb=mb end)
+KB(KbP,"Aim Key (segurar)",16,function() return Cfg.Aim.AimKeyName end,function(k,n,mb) Cfg.Aim.AimKey=k or Enum.KeyCode.Unknown; Cfg.Aim.AimKeyName=n end)
 Sep(KbP,18); SL(KbP,"🫥  TELAGEM BYPASS",19,C.orange)
 Toggle(KbP,"Ativar Telagem Bypass",20,
     function() return Cfg.Settings.BypassEnabled end,
     function(v)
         Cfg.Settings.BypassEnabled=v
-        -- se desabilitar e bypass estava ativo, restaura
         if not v and _bypassActive then
             _bypassActive=false; ApplyBypass(false)
         end
     end, nil, C.orange)
 KB(KbP,"Bypass Key (toggle)",22,
     function() return Cfg.Settings.BypassKeyName end,
-    function(k,n) Cfg.Settings.BypassKey=k; Cfg.Settings.BypassKeyName=n end)
+    function(k,n,mb) Cfg.Settings.BypassKey=k or Enum.KeyCode.Unknown; Cfg.Settings.BypassKeyName=n; Cfg.Settings.BypassMb=mb end)
 do
     local f=Instance.new("Frame",KbP); f.Size=UDim2.new(1,0,0,42); f.BackgroundColor3=Color3.fromRGB(28,18,6); f.BorderSizePixel=0; f.LayoutOrder=24; Instance.new("UICorner",f).CornerRadius=UDim.new(0,4); Instance.new("UIStroke",f).Color=Color3.fromRGB(80,50,10)
     local l=Instance.new("TextLabel",f); l.Text="🫥  Quando ativado, pressionar a Bypass Key esconde\na GUI e os drawings (ESP/FOV) instantaneamente.\nPressione novamente para restaurar tudo."; l.Size=UDim2.new(1,-12,1,0); l.Position=UDim2.new(0,6,0,0); l.BackgroundTransparency=1; l.TextColor3=Color3.fromRGB(180,130,50); l.Font=FM; l.TextSize=10; l.TextWrapped=true; l.TextXAlignment=Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Center
 end
--- botão de teste rápido
 local _bypassBtnLbl = "🫥  Testar Bypass (toggle)"
 local bypassTestBtn = Btn(KbP, _bypassBtnLbl, 26, function()
     if not Cfg.Settings.BypassEnabled then return end
