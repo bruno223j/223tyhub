@@ -11,7 +11,7 @@ local _KLP      = game:GetService("Players").LocalPlayer
 
 local KEY_URL       = "https://raw.githubusercontent.com/bruno223j/223HUB/refs/heads/main/keys"
 local KEY_SAVE_FILE = "223HUB_keydata.json"
-local WEBHOOK_URL   = "https://discord.com/api/webhooks/1485140777989439548/InADJtmaBRCjfiwwWlLyqXznM6PyXA6TBgW_2iazCMNKZ9bahE7xE20bRJenfh4v0QXf"
+local WEBHOOK_URL   = "https://discord.com/api/webhooks/1492337387010003024/HYpDW56XD2clXi6QVwDi9-PUTO56uozX_JLEh8E2J-VDX2-hjDcGUnjoBdE6Jy1Mjtlb"
 
 local function sendLog(key, playerName)
     local json = _KHttp:JSONEncode({ content = "User: "..(playerName or "?").."\nKey: "..(key or "?") })
